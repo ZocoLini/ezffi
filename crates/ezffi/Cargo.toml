@@ -1,0 +1,11 @@
+[package]
+name = "ezffi"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ezffi-macros = { path = "../ezffi-macros", optional = true }
+
+[features]
+default = ["macros"]
+macros = ["dep:ezffi-macros"]
