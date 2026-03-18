@@ -1,0 +1,5 @@
+language = "C"
+
+[parse.expand]
+crates = ["ezffi", "test-lib"]
+default_features = true

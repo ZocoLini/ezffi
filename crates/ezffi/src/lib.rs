@@ -5,8 +5,6 @@ pub use ezffi_macros::*;
 
 mod std_impls;
 
-pub use std_impls::*;
-
 pub trait IntoFfi {
     type Ffi;
 

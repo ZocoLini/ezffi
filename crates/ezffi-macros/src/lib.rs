@@ -9,6 +9,9 @@ use crate::{
 
 mod functions;
 mod structs;
+mod type_resolver;
+
+use type_resolver::FFITypeResolver;
 
 #[proc_macro_attribute]
 pub fn export(
@@ -50,26 +53,6 @@ fn ffi_fn_name(fn_name: &Ident, impl_ty: Option<&Type>) -> Ident {
 
 fn ffi_free_fn_name(ty_name: &Ident) -> Ident {
     format_ident!("ffi_{}_free", ty_name)
-}
-
-fn ffi_ty_for(ty: &syn::Type, self_repl: Option<&Type>) -> proc_macro2::TokenStream {
-    match ty {
-        syn::Type::Reference(r) => {
-            let ty = ffi_ty_for(&r.elem, self_repl);
-
-            quote! { #ty }
-        }
-        syn::Type::Path(path) => {
-            let ty = if path.path.segments[0].ident == "Self" {
-                quote! { #self_repl }
-            } else {
-                quote! { #ty }
-            };
-
-            quote! { <#ty as ezffi::IntoFfi>::Ffi }
-        }
-        _ => unimplemented!("Unsupported ty {}", quote!(#ty)),
-    }
 }
 
 #[cfg(test)]

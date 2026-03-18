@@ -10,6 +10,8 @@ pub fn expand_struct(input: proc_macro2::TokenStream) -> proc_macro2::TokenStrea
     let ffi_name = ffi_struct_name(ty_name);
     let free_fn_name = ffi_free_fn_name(ty_name);
 
+    super::FFITypeResolver::insert(&ty_name.to_string(), &ffi_name.to_string());
+
     quote! {
         #input
 
@@ -76,7 +78,7 @@ mod tests {
             pub struct Test {
                 number: u64
             }
-            
+
             #[derive(Clone, Copy)]
             #[repr(C)]
             pub struct FfiTest {

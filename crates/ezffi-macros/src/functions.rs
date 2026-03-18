@@ -1,7 +1,7 @@
 use quote::quote;
 use syn::{FnArg, ItemFn, ItemImpl, ReturnType, Signature, Type};
 
-use crate::{ffi_fn_name, ffi_ty_for};
+use crate::ffi_fn_name;
 
 pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let input: ItemImpl = syn::parse2(input).expect("Must be valid code");
@@ -47,7 +47,7 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     for arg in inputs {
         match arg {
             FnArg::Receiver(receiver) => {
-                let ffi_ty = quote! { <#impl_ty as ezffi::IntoFfi>::Ffi };
+                let ffi_ty = super::FFITypeResolver::ffi_ty_for(&receiver.ty, impl_ty);
 
                 let is_ref = receiver.reference.is_some();
                 let is_mut = receiver.mutability.is_some();
@@ -79,7 +79,7 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
                     }
                 };
                 let ty = &pat_type.ty;
-                let ffi_ty = ffi_ty_for(ty, impl_ty);
+                let ffi_ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
 
                 let ty_conversion = match &*pat_type.ty {
                     Type::Reference(r) => {
@@ -118,8 +118,8 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
 
     // Function return type
     let ffi_ret = match output {
-        ReturnType::Default => quote! { <() as ezffi::IntoFfi>::Ffi },
-        ReturnType::Type(_, ty) => ffi_ty_for(ty, impl_ty),
+        ReturnType::Default => quote! { () },
+        ReturnType::Type(_, ty) => super::FFITypeResolver::ffi_ty_for(ty, impl_ty),
     };
 
     // Return conversion
