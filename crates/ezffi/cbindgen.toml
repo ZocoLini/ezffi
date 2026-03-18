@@ -1,0 +1,7 @@
+language = "C"
+
+include_guard = "EZFFI_H"
+
+[parse]
+parse_deps = false
+expand = ["ezffi"]
