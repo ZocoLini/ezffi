@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 #[ezffi::export]
+#[derive(Default)]
 pub struct SimpleStruct {
     field: u64,
 }
@@ -75,6 +76,7 @@ fn test_struct_ffi_methods_usage() {
 }
 
 #[ezffi::export]
+#[derive(Default)]
 pub struct DeallocationStruct {
     counter: Rc<()>,
 }
@@ -87,7 +89,7 @@ impl DeallocationStruct {
         }
     }
 
-    pub fn clone(&self) -> Self {
+    pub fn manual_clone(&self) -> Self {
         DeallocationStruct {
             counter: self.counter.clone(),
         }
@@ -103,8 +105,8 @@ impl DeallocationStruct {
 #[test]
 fn test_deallocation_struct() {
     let obj = unsafe { ffi_DeallocationStruct_new() };
-    let clone1 = unsafe { ffi_DeallocationStruct_clone(obj) };
-    let clone2 = unsafe { ffi_DeallocationStruct_clone(obj) };
+    let clone1 = unsafe { ffi_DeallocationStruct_manual_clone(obj) };
+    let clone2 = unsafe { ffi_DeallocationStruct_manual_clone(obj) };
 
     assert_eq!(unsafe { ffi_DeallocationStruct_get_counter(obj) }, 3);
     unsafe { ffi_DeallocationStruct_consume(clone1) };

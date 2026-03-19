@@ -1,0 +1,51 @@
+#!/bin/bash
+# To enable locally:
+#   git config core.hooksPath .githooks
+#
+# This hook will:
+#  - run `cargo fmt --all -- --check`
+#  - run `cargo clippy --all-targets --all-features -- -D warnings`
+#
+
+set -euo pipefail
+
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+RED="\033[0;31m"
+NC="\033[0m"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$SCRIPT_DIR/.."
+
+cd "$WORKSPACE_ROOT" || {
+  echo -e "${RED}Unable to change to workspace root: $WORKSPACE_ROOT${NC}"
+  exit 1
+}
+
+echo -e "${YELLOW}Running pre-commit checks${NC}"
+
+# Verify `cargo` exists
+if ! command -v cargo >/dev/null 2>&1; then
+  echo -e "${RED}cargo not found in PATH. Install Rust toolchain (rustup) and ensure cargo is available.${NC}"
+  exit 1
+fi
+
+# cargo fmt (check-only)
+echo -e "${YELLOW}==> cargo fmt (check)${NC}"
+if ! cargo fmt --all -- --check; then
+  echo -e "\n${RED}ERROR: Formatting issues detected by cargo fmt.${NC}"
+  cargo fmt --all
+  exit 1
+fi
+
+# cargo clippy
+echo -e "${YELLOW}==> cargo clippy (treating warnings as errors)${NC}"
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
+  echo -e "\n${RED}ERROR: cargo clippy found problems. Fix them or adjust clippy configuration.${NC}"
+  echo "You can run clippy locally with:"
+  echo -e "  ${GREEN}cargo clippy --all-targets --all-features -- -D warnings${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}Pre-commit checks passed.${NC}"
+exit 0

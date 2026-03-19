@@ -60,7 +60,7 @@ impl FFITypeResolver {
                     let map_lock = TYPE_NAME_MAP.read().unwrap();
                     let ffi_ty = map_lock
                         .get(&ty_name)
-                        .expect(&format!("Couldn't find defined FFI name for {ty_name}"));
+                        .unwrap_or_else(|| panic!("Couldn't find defined FFI name for {ty_name}"));
                     let ty = format_ident!("{}", ffi_ty);
                     quote! { #ty }
                 } else {

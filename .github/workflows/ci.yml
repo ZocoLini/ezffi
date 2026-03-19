@@ -1,0 +1,102 @@
+name: CI
+
+on:
+    push:
+        branches: [main, master]
+    pull_request:
+        branches: [main, master]
+
+jobs:
+    fmt-clippy-test:
+        name: Format, Lint and Unit Tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Rust toolchain (nightly)
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: nightly
+                  profile: minimal
+                  override: true
+
+            - name: Add rustfmt and clippy components (nightly)
+              run: |
+                  rustup component add rustfmt clippy --toolchain nightly
+
+            - name: Cache cargo registry and git
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                  key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+            - name: Cache cargo target dir
+              uses: actions/cache@v4
+              with:
+                  path: target
+                  key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
+
+            - name: Install cbindgen
+              run: |
+                  cargo install cbindgen --locked --force
+
+            - name: Check code formatting (rustfmt)
+              env:
+                  RUSTUP_TOOLCHAIN: nightly
+              run: |
+                  cargo fmt --all -- --check
+
+            - name: Run clippy (fail on warnings)
+              env:
+                  RUSTUP_TOOLCHAIN: nightly
+              run: |
+                  cargo clippy --all-targets --all-features -- -D warnings
+
+            - name: Run unit tests
+              env:
+                  RUSTUP_TOOLCHAIN: nightly
+              run: |
+                  cargo test --workspace --jobs 2
+
+    ffi-c-tests:
+        name: C integration tests (ffi-c-tests)
+        runs-on: ubuntu-latest
+        needs: fmt-clippy-test
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Rust toolchain (nightly)
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: nightly
+                  profile: minimal
+                  override: true
+
+            - name: Add rustfmt and clippy components (nightly)
+              run: |
+                  rustup component add rustfmt clippy --toolchain nightly
+
+            - name: Install build dependencies
+              run: sudo apt-get update && sudo apt-get install -y build-essential gcc
+
+            - name: Install cbindgen
+              run: |
+                  cargo install cbindgen --locked --force
+
+            - name: Build workspace artifacts (using nightly)
+              env:
+                  RUSTUP_TOOLCHAIN: nightly
+              run: |
+                  cargo build --workspace --verbose
+
+            - name: Run ffi-c-tests script
+              working-directory: crates/ffi-c-tests
+              env:
+                  RUSTUP_TOOLCHAIN: nightly
+              run: |
+                  chmod +x test.sh
+                  ./test.sh
