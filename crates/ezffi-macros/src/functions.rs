@@ -157,6 +157,10 @@ mod tests {
 
     #[test]
     fn fn_macro() {
+        crate::FFITypeResolver::insert("Owned", "FfiOwned");
+        crate::FFITypeResolver::insert("Reference", "FfiReference");
+        crate::FFITypeResolver::insert("Mutable", "FfiMutable");
+
         let input = quote! {
             pub fn test(o: Owned, r: &Reference, m: &mut Mutable) {}
         };
@@ -168,10 +172,10 @@ mod tests {
 
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn ffi_test(
-                mut o: <Owned as ezffi::IntoFfi>::Ffi,
-                mut r: <Reference as ezffi::IntoFfi>::Ffi,
-                mut m: <Mutable as ezffi::IntoFfi>::Ffi
-            ) -> <() as ezffi::IntoFfi>::Ffi {
+                mut o: FfiOwned,
+                mut r: FfiReference,
+                mut m: FfiMutable
+            ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -218,7 +222,7 @@ mod tests {
             }
 
             #[unsafe(no_mangle)]
-            pub unsafe extern "C" fn ffi_Test_new() -> <Test as ezffi::IntoFfi>::Ffi {
+            pub unsafe extern "C" fn ffi_Test_new() -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -228,7 +232,7 @@ mod tests {
             }
 
             #[unsafe(no_mangle)]
-            pub unsafe extern "C" fn ffi_Test_getter(mut this: <Test as ezffi::IntoFfi>::Ffi) -> <u64 as ezffi::IntoFfi>::Ffi {
+            pub unsafe extern "C" fn ffi_Test_getter(mut this: FfiTest) -> u64 {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -241,9 +245,9 @@ mod tests {
 
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn ffi_Test_setter(
-                mut this: <Test as ezffi::IntoFfi>::Ffi,
-                mut value: <u64 as ezffi::IntoFfi>::Ffi
-            ) -> <() as ezffi::IntoFfi>::Ffi {
+                mut this: FfiTest,
+                mut value: u64
+            ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -257,8 +261,8 @@ mod tests {
 
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn ffi_Test_funny_destroyer(
-                mut this: <Test as ezffi::IntoFfi>::Ffi
-            ) -> <() as ezffi::IntoFfi>::Ffi {
+                mut this: FfiTest
+            ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -270,7 +274,7 @@ mod tests {
             }
 
             #[unsafe(no_mangle)]
-            pub unsafe extern "C" fn ffi_Test_static1() -> <() as ezffi::IntoFfi>::Ffi {
+            pub unsafe extern "C" fn ffi_Test_static1() -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -281,10 +285,10 @@ mod tests {
 
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn ffi_Test_static2(
-                mut a: <Test as ezffi::IntoFfi>::Ffi,
-                mut b: <Test as ezffi::IntoFfi>::Ffi,
-                mut c: <Test as ezffi::IntoFfi>::Ffi
-            ) -> <Test as ezffi::IntoFfi>::Ffi {
+                mut a: FfiTest,
+                mut b: FfiTest,
+                mut c: FfiTest
+                ) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -298,7 +302,7 @@ mod tests {
             }
 
             #[unsafe(no_mangle)]
-            pub unsafe extern "C" fn ffi_Test_ret_self_ref(mut this: <Test as ezffi::IntoFfi>::Ffi) -> <Test as ezffi::IntoFfi>::Ffi {
+            pub unsafe extern "C" fn ffi_Test_ret_self_ref(mut this: FfiTest) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
@@ -310,7 +314,7 @@ mod tests {
             }
 
             #[unsafe(no_mangle)]
-            pub unsafe extern "C" fn ffi_Test_ret_self_mut(mut this: <Test as ezffi::IntoFfi>::Ffi) -> <Test as ezffi::IntoFfi>::Ffi {
+            pub unsafe extern "C" fn ffi_Test_ret_self_mut(mut this: FfiTest) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
 
