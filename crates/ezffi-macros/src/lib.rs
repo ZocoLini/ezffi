@@ -24,7 +24,7 @@ pub fn export(
     };
 
     match item_to_export {
-        Item::Struct(_) => expand_struct(item.into()).into(),
+        Item::Struct(item) => expand_struct(item).into(),
         Item::Fn(_) => expand_fn(item.into()).into(),
         Item::Impl(_) => expand_impl(item.into()).into(),
         _ => unimplemented!(

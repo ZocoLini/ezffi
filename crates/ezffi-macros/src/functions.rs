@@ -111,7 +111,13 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     // Call the function using full qualified name, have to check
     // if it is a method or a free function
     let call = if let Some(ty) = impl_ty {
-        quote! { #ty::#fn_name( #( #call_args ),* ) }
+        match ty {
+            syn::Type::Path(path) => {
+                let ident = &path.path.segments[0].ident;
+                quote! { #ident::#fn_name( #( #call_args ),* ) }
+            }
+            _ => unimplemented!("Cannot call method on type {}", quote! { #ty }),
+        }
     } else {
         quote! { #fn_name( #( #call_args ),* ) }
     };
@@ -139,6 +145,9 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
         ) -> #ffi_ret {
             use ezffi::IntoFfi;
             use ezffi::IntoRust;
+
+            use ezffi::GenericIntoFfi;
+            use ezffi::GenericIntoRust;
 
             #( #conversions )*
 
@@ -178,6 +187,9 @@ mod tests {
             ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let mut o = o.into_rust_owned();
                 let r = r.into_rust();
@@ -225,6 +237,9 @@ mod tests {
             pub unsafe extern "C" fn ffi_Test_new() -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let result = Test::new();
 
@@ -235,6 +250,9 @@ mod tests {
             pub unsafe extern "C" fn ffi_Test_getter(mut this: FfiTest) -> u64 {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let this = this.into_rust();
 
@@ -250,6 +268,9 @@ mod tests {
             ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let mut this = this.into_rust_mut();
                 let mut value = value.into_rust_owned();
@@ -265,6 +286,9 @@ mod tests {
             ) -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let mut this = this.into_rust_owned();
 
@@ -277,6 +301,9 @@ mod tests {
             pub unsafe extern "C" fn ffi_Test_static1() -> () {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let result = Test::static1();
 
@@ -291,6 +318,9 @@ mod tests {
                 ) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let mut a = a.into_rust_owned();
                 let b = b.into_rust();
@@ -305,6 +335,9 @@ mod tests {
             pub unsafe extern "C" fn ffi_Test_ret_self_ref(mut this: FfiTest) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let this = this.into_rust();
 
@@ -317,6 +350,9 @@ mod tests {
             pub unsafe extern "C" fn ffi_Test_ret_self_mut(mut this: FfiTest) -> FfiTest {
                 use ezffi::IntoFfi;
                 use ezffi::IntoRust;
+                
+                use ezffi::GenericIntoFfi;
+                use ezffi::GenericIntoRust;
 
                 let mut this = this.into_rust_mut();
 

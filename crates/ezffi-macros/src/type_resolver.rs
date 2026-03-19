@@ -55,16 +55,17 @@ impl FFITypeResolver {
                     return Self::ffi_ty_for(self_repl.unwrap(), None);
                 }
 
-                if let Some(ident) = path.path.get_ident() {
-                    let ty_name = ident.to_string();
-                    let map_lock = TYPE_NAME_MAP.read().unwrap();
-                    let ffi_ty = map_lock
-                        .get(&ty_name)
-                        .unwrap_or_else(|| panic!("Couldn't find defined FFI name for {ty_name}"));
+                let ident = path.path.segments[0].ident.to_string();
+                let ty_name = ident.to_string();
+
+                let map_lock = TYPE_NAME_MAP.read().unwrap();
+
+                if let Some(ffi_ty) = map_lock.get(&ty_name) {
                     let ty = format_ident!("{}", ffi_ty);
                     quote! { #ty }
                 } else {
-                    unimplemented!("Unsupported ty {}", quote!(#ty))
+                    let ty = format_ident!("{}", ident);
+                    quote! { ezffi::#ty }
                 }
             }
             _ => unimplemented!("Unsupported ty {}", quote!(#ty)),

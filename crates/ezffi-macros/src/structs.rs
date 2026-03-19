@@ -1,9 +1,17 @@
-use syn::DeriveInput;
+use syn::{DeriveInput, ItemStruct};
 
 use crate::{ffi_free_fn_name, ffi_struct_name};
 use quote::quote;
 
-pub fn expand_struct(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+pub fn expand_struct(item: ItemStruct) -> proc_macro2::TokenStream {
+    if item.generics.gt_token.is_some() {
+        expand_generic_struct(quote! { #item })
+    } else {
+        expand_simple_struct(quote! { #item })
+    }
+}
+
+fn expand_simple_struct(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let input: DeriveInput = syn::parse2(input).expect("Must be valid code");
     let ty_name = &input.ident;
 
@@ -58,6 +66,62 @@ pub fn expand_struct(input: proc_macro2::TokenStream) -> proc_macro2::TokenStrea
     }
 }
 
+fn expand_generic_struct(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    let input: DeriveInput = syn::parse2(input).expect("Must be valid code");
+    let ty_name = &input.ident;
+
+    let ffi_name = ffi_struct_name(ty_name);
+    let free_fn_name = ffi_free_fn_name(ty_name);
+
+    super::FFITypeResolver::insert(&ty_name.to_string(), &ffi_name.to_string());
+
+    quote! {
+        #input
+
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        pub struct #ffi_name {
+            inner: *mut core::ffi::c_void,
+        }
+
+        impl<T> ezffi::GenericIntoFfi<T> for #ty_name<T> {
+            type Ffi = #ffi_name;
+
+            unsafe fn ref_into_ffi(&self) -> Self::Ffi {
+                #ffi_name {
+                    inner: self as *const Self as *mut core::ffi::c_void,
+                }
+            }
+            unsafe fn owned_into_ffi(self) -> Self::Ffi {
+                #ffi_name {
+                    inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
+                }
+            }
+        }
+
+        impl ezffi::GenericIntoRust for #ffi_name {
+            unsafe fn into_rust<T>(&self) -> &T {
+                unsafe { &*(self.inner as *mut T) }
+            }
+
+            unsafe fn into_rust_mut<T>(&mut self) -> &mut T {
+                unsafe { &mut *(self.inner as *mut T) }
+            }
+
+            unsafe fn into_rust_owned<T>(self) -> T {
+                unsafe { *Box::from_raw(self.inner as *mut T) }
+            }
+        }
+
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn #free_fn_name(o: #ffi_name) {
+
+            #[allow(clippy::from_raw_with_void_ptr)]
+            let _ = unsafe { Box::from_raw(o.inner) };
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::normalize;
@@ -72,7 +136,7 @@ mod tests {
             }
         };
 
-        let output = expand_struct(input);
+        let output = expand_simple_struct(input);
 
         let expected = r#"
             pub struct Test {
