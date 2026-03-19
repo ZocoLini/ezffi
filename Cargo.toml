@@ -1,5 +1,5 @@
 [workspace]
 resolver = "2"
-members = ["crates/ezffi", "crates/ezffi-macros", "crates/test-lib"]
+members = ["crates/ezffi", "crates/ezffi-macros", "crates/ffi-c-tests"]
 
 [workspace.dependencies]
