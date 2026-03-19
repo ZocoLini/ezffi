@@ -8,12 +8,14 @@ NC="\033[0m"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-cargo build -p test-lib
+
+cargo build -p ezffi
+cargo build -p ffi-c-tests
 
 EXIT_CODE=0
 
 for file in c-tests/*.c; do
-  if gcc "$file" -Iinclude -L../../target/debug -ltest_lib -o test.bin -g && ./test.bin; then
+  if gcc "$file" -Iinclude -I../ezffi/include -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && ./test.bin; then
     echo -e "${GREEN}Passed: $file${NC}"
   else
     echo -e "${RED}Failed: $file${NC}"

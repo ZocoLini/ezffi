@@ -1,5 +1,6 @@
 use std::os::raw::c_void;
 
+#[repr(C)]
 pub struct Vec {
     inner: *mut c_void,
 }
@@ -14,9 +15,9 @@ impl<T> crate::IntoFfi<T> for std::vec::Vec<T> {
     }
 
     unsafe fn owned_into_ffi(self) -> Vec {
-        let result = unsafe { Self::ref_into_ffi(&self) };
-        std::mem::forget(self);
-        result
+        Vec {
+            inner: Box::into_raw(Box::new(self)) as *mut c_void,
+        }
     }
 }
 
@@ -32,4 +33,9 @@ impl<T> crate::IntoRust<T> for Vec {
     unsafe fn into_rust_owned(self) -> T {
         unsafe { std::ptr::read(self.inner as *const T) }
     }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ezffi_free_vec(o: Vec) {
+    let _ = unsafe { Box::from_raw(o.inner as *mut std::vec::Vec<()>) };
 }

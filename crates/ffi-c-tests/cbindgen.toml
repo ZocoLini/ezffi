@@ -1,5 +1,7 @@
+includes = ["ezffi.h"]
+
 language = "C"
 
 [parse.expand]
-crates = ["ezffi", "test-lib"]
+crates = ["ffi-c-tests"]
 default_features = true

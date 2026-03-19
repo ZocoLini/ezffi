@@ -1,0 +1,20 @@
+#include "../include/test.h"
+#include <assert.h>
+
+int main() {
+  assert(ffi_return_primitive() == 8);
+  
+  FfiSimpleStruct a = ffi_new_simple_struct();
+  FfiSimpleStruct b = ffi_new_simple_struct();
+  FfiSimpleStruct c = ffi_new_simple_struct();
+  
+  ffi_test(a, b, c);
+  ffi_receive_simple_struct(a);
+  ffi_receive_simple_struct_mut(a);
+  
+  ffi_receive_simple_struct_owned(a);
+  ffi_receive_simple_struct_owned(b);
+  ffi_receive_simple_struct_owned(c);
+
+  return 0;
+}

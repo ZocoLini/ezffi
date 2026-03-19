@@ -1,2 +1,4 @@
-mod arithmetics;
-mod car;
+mod funcions;
+mod generics;
+mod structs;
+mod vec;

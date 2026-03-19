@@ -7,6 +7,11 @@ pub fn return_primitive() -> u32 {
 }
 
 #[ezffi::export]
+pub fn new_simple_struct() -> SimpleStruct {
+    SimpleStruct
+}
+
+#[ezffi::export]
 pub fn test(_o: SimpleStruct, _r: &SimpleStruct, _m: &mut SimpleStruct) {}
 
 #[ezffi::export]
