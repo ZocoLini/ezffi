@@ -54,8 +54,3 @@ fn ffi_fn_name(fn_name: &Ident, impl_ty: Option<&Type>) -> Ident {
 fn ffi_free_fn_name(ty_name: &Ident) -> Ident {
     format_ident!("ffi_{}_free", ty_name)
 }
-
-#[cfg(test)]
-fn normalize(s: &str) -> String {
-    s.split_whitespace().collect()
-}

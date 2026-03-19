@@ -1,22 +1,6 @@
 macro_rules! impl_ffi_identity {
     ($t:ty) => {
-        impl crate::IntoRust for $t {
-            type Rust = $t;
-
-            unsafe fn into_rust(&self) -> &Self::Rust {
-                self
-            }
-
-            unsafe fn into_rust_mut(&mut self) -> &mut Self::Rust {
-                self
-            }
-
-            unsafe fn into_rust_owned(self) -> Self::Rust {
-                self
-            }
-        }
-
-        impl crate::IntoFfi for $t {
+        impl crate::IntoFfi<()> for $t {
             type Ffi = $t;
 
             unsafe fn owned_into_ffi(self) -> Self::Ffi {
@@ -25,6 +9,20 @@ macro_rules! impl_ffi_identity {
 
             unsafe fn ref_into_ffi(&self) -> Self::Ffi {
                 *self
+            }
+        }
+
+        impl crate::IntoRust<$t> for $t {
+            unsafe fn into_rust(&self) -> &$t {
+                self
+            }
+
+            unsafe fn into_rust_mut(&mut self) -> &mut $t {
+                self
+            }
+
+            unsafe fn into_rust_owned(self) -> $t {
+                self
             }
         }
     };

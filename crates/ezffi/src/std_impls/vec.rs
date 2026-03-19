@@ -4,7 +4,7 @@ pub struct Vec {
     inner: *mut c_void,
 }
 
-impl<T> crate::GenericIntoFfi<T> for std::vec::Vec<T> {
+impl<T> crate::IntoFfi<T> for std::vec::Vec<T> {
     type Ffi = Vec;
 
     unsafe fn ref_into_ffi(&self) -> Vec {
@@ -20,16 +20,16 @@ impl<T> crate::GenericIntoFfi<T> for std::vec::Vec<T> {
     }
 }
 
-impl crate::GenericIntoRust for Vec {
-    unsafe fn into_rust<T>(&self) -> &T {
+impl<T> crate::IntoRust<T> for Vec {
+    unsafe fn into_rust(&self) -> &T {
         unsafe { &*(self.inner as *const T) }
     }
 
-    unsafe fn into_rust_mut<T>(&mut self) -> &mut T {
+    unsafe fn into_rust_mut(&mut self) -> &mut T {
         unsafe { &mut *(self.inner as *mut T) }
     }
 
-    unsafe fn into_rust_owned<T>(self) -> T {
+    unsafe fn into_rust_owned(self) -> T {
         unsafe { std::ptr::read(self.inner as *const T) }
     }
 }
