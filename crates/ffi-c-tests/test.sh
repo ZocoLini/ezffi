@@ -14,8 +14,10 @@ cargo build -p ffi-c-tests
 
 EXIT_CODE=0
 
+cp ../ezffi/include/ezffi.h include/ezffi.h
+
 for file in c-tests/*.c; do
-  if gcc "$file" -Iinclude -I../ezffi/include -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && ./test.bin; then
+  if gcc "$file" -Iinclude -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && ./test.bin; then
     echo -e "${GREEN}Passed: $file${NC}"
   else
     echo -e "${RED}Failed: $file${NC}"
