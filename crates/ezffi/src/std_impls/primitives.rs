@@ -1,50 +1,22 @@
-macro_rules! impl_ffi_identity {
-    ($t:ty) => {
-        impl crate::IntoFfi<()> for $t {
-            type Ffi = $t;
+use ezffi_macros::export_as_identity;
 
-            unsafe fn owned_into_ffi(self) -> Self::Ffi {
-                self
-            }
+export_as_identity!(());
 
-            unsafe fn ref_into_ffi(&self) -> Self::Ffi {
-                *self
-            }
-        }
+export_as_identity!(i8);
+export_as_identity!(u8);
+export_as_identity!(i16);
+export_as_identity!(u16);
+export_as_identity!(i32);
+export_as_identity!(u32);
+export_as_identity!(i64);
+export_as_identity!(u64);
+export_as_identity!(i128);
+export_as_identity!(u128);
+export_as_identity!(isize);
+export_as_identity!(usize);
 
-        impl crate::IntoRust<$t> for $t {
-            unsafe fn into_rust(&self) -> &$t {
-                self
-            }
+export_as_identity!(f32);
+export_as_identity!(f64);
 
-            unsafe fn into_rust_mut(&mut self) -> &mut $t {
-                self
-            }
-
-            unsafe fn into_rust_owned(self) -> $t {
-                self
-            }
-        }
-    };
-}
-
-impl_ffi_identity!(());
-
-impl_ffi_identity!(i8);
-impl_ffi_identity!(u8);
-impl_ffi_identity!(i16);
-impl_ffi_identity!(u16);
-impl_ffi_identity!(i32);
-impl_ffi_identity!(u32);
-impl_ffi_identity!(i64);
-impl_ffi_identity!(u64);
-impl_ffi_identity!(i128);
-impl_ffi_identity!(u128);
-impl_ffi_identity!(isize);
-impl_ffi_identity!(usize);
-
-impl_ffi_identity!(f32);
-impl_ffi_identity!(f64);
-
-impl_ffi_identity!(bool);
-impl_ffi_identity!(char);
+export_as_identity!(bool);
+export_as_identity!(char);

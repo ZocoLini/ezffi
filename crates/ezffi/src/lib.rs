@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::wrong_self_convention)]
 
-pub use ezffi_macros::*;
+pub use ezffi_macros::export;
 
 mod std_impls;
 

@@ -10,7 +10,7 @@ int main() {
 
   assert(ffi_get_element(vec, 10) == 10);
 
-  ezffi_free_vec(vec);
+  ezffi_free_Vec(vec);
   
   return 0;
 }
