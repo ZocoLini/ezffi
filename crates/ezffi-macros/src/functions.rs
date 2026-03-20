@@ -15,10 +15,7 @@ pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream 
         }
     }
 
-    quote! {
-        #input
-        #( #wrappers )*
-    }
+    quote! { #( #wrappers )* }
 }
 
 pub fn expand_fn(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
@@ -26,10 +23,7 @@ pub fn expand_fn(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
 
     let wrapper = generate_fn_wrapper(None, &input.sig);
 
-    quote! {
-        #input
-        #wrapper
-    }
+    quote! { #wrapper }
 }
 
 fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::TokenStream {

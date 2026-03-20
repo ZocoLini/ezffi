@@ -2,7 +2,7 @@
 #include <assert.h>
 
 int main() {
-  Vec vec = ffi_create_vec();
+  FfiVec vec = ffi_create_vec();
   assert(ffi_count_elements(vec) == 10);
 
   ffi_add_element(vec, 10);
@@ -10,7 +10,7 @@ int main() {
 
   assert(ffi_get_element(vec, 10) == 10);
 
-  ezffi_free_Vec(vec);
+  ffi_Vec_free(vec);
   
   return 0;
 }

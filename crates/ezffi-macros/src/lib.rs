@@ -13,10 +13,34 @@ mod type_resolver;
 
 use type_resolver::FFITypeResolver;
 
+enum GenerationType {
+    Internal,
+    External,
+}
+
 #[proc_macro_attribute]
 pub fn export(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let input = {
+        let item = item.clone();
+        parse_macro_input!(item as Item)
+    };
+
+    let output: proc_macro2::TokenStream = export_impl(attr, item, GenerationType::External).into();
+
+    quote! {
+        #input
+        #output
+    }
+    .into()
+}
+
+fn export_impl(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
+    generation_type: GenerationType,
 ) -> proc_macro::TokenStream {
     let item_to_export = {
         let item = item.clone();
@@ -24,7 +48,7 @@ pub fn export(
     };
 
     match item_to_export {
-        Item::Struct(item) => expand_struct(item).into(),
+        Item::Struct(item) => expand_struct(item, generation_type).into(),
         Item::Fn(_) => expand_fn(item.into()).into(),
         Item::Impl(_) => expand_impl(item.into()).into(),
         _ => unimplemented!(
@@ -32,6 +56,19 @@ pub fn export(
             quote! { #item_to_export }
         ),
     }
+}
+
+#[proc_macro]
+pub fn export_extern_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let path = parse_macro_input!(input as syn::Path);
+
+    let dummy_struct = quote! { struct #path {} }.into();
+
+    export_impl(
+        proc_macro::TokenStream::new(),
+        dummy_struct,
+        GenerationType::Internal,
+    )
 }
 
 #[proc_macro]
@@ -63,110 +100,6 @@ pub fn export_as_identity(input: proc_macro::TokenStream) -> proc_macro::TokenSt
             unsafe fn into_rust_owned(self) -> #ty {
                 self
             }
-        }
-    }
-    .into()
-}
-
-#[proc_macro]
-pub fn export_extern_type_generic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let path = parse_macro_input!(input as syn::Path);
-
-    let ident = &path.segments.last().unwrap().ident;
-
-    let free_fn = format_ident!("ezffi_free_{}", ident);
-
-    quote! {
-        #[repr(C)]
-        pub struct #ident {
-            inner: *mut std::os::raw::c_void,
-        }
-
-        impl<T> crate::IntoFfi<T> for #path<T> {
-            type Ffi = #ident;
-
-            unsafe fn ref_into_ffi(&self) -> #ident {
-                #ident {
-                    inner: self as *const #path<T> as *mut std::os::raw::c_void,
-                }
-            }
-
-            unsafe fn owned_into_ffi(self) -> #ident {
-                #ident {
-                    inner: Box::into_raw(Box::new(self)) as *mut std::os::raw::c_void,
-                }
-            }
-        }
-
-        impl<T> crate::IntoRust<T> for #ident {
-            unsafe fn into_rust(&self) -> &T {
-                &*(self.inner as *const T)
-            }
-
-            unsafe fn into_rust_mut(&mut self) -> &mut T {
-                &mut *(self.inner as *mut T)
-            }
-
-            unsafe fn into_rust_owned(self) -> T {
-                std::ptr::read(self.inner as *const T)
-            }
-        }
-
-        #[unsafe(no_mangle)]
-        pub unsafe extern "C" fn #free_fn(o: #ident) {
-            let _ = Box::from_raw(o.inner as *mut #path<()>);
-        }
-    }
-    .into()
-}
-
-#[proc_macro]
-pub fn export_extern_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let path = parse_macro_input!(input as syn::Path);
-
-    let ident = &path.segments.last().unwrap().ident;
-
-    let free_fn = format_ident!("ezffi_free_{}", ident);
-
-    quote! {
-        #[repr(C)]
-        pub struct #ident {
-            inner: *mut std::os::raw::c_void,
-        }
-
-        impl crate::IntoFfi<()> for #path {
-            type Ffi = #ident;
-
-            unsafe fn ref_into_ffi(&self) -> #ident {
-                #ident {
-                    inner: self as *const #path as *mut std::os::raw::c_void,
-                }
-            }
-
-            unsafe fn owned_into_ffi(self) -> #ident {
-                #ident {
-                    inner: Box::into_raw(Box::new(self)) as *mut std::os::raw::c_void,
-                }
-            }
-        }
-
-        impl<T> crate::IntoRust<T> for #ident {
-            unsafe fn into_rust(&self) -> &T {
-                &*(self.inner as *const T)
-            }
-
-            unsafe fn into_rust_mut(&mut self) -> &mut T {
-                &mut *(self.inner as *mut T)
-            }
-
-            unsafe fn into_rust_owned(self) -> T {
-                std::ptr::read(self.inner as *const T)
-            }
-        }
-
-        #[unsafe(no_mangle)]
-        pub unsafe extern "C" fn #free_fn(o: #ident) {
-            let _ = Box::from_raw(o.inner as *mut #path);
         }
     }
     .into()

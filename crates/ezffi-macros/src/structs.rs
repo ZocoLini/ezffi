@@ -1,9 +1,12 @@
 use syn::{DeriveInput, ItemStruct};
 
-use crate::{ffi_free_fn_name, ffi_struct_name};
+use crate::{GenerationType, ffi_free_fn_name, ffi_struct_name};
 use quote::quote;
 
-pub fn expand_struct(item: ItemStruct) -> proc_macro2::TokenStream {
+pub fn expand_struct(
+    item: ItemStruct,
+    generation_type: GenerationType,
+) -> proc_macro2::TokenStream {
     let input = quote! { #item };
     let input: DeriveInput = syn::parse2(input).expect("Must be valid code");
     let ty_name = &input.ident;
@@ -13,21 +16,24 @@ pub fn expand_struct(item: ItemStruct) -> proc_macro2::TokenStream {
 
     super::FFITypeResolver::insert(&ty_name.to_string(), &ffi_name.to_string());
 
+    let trait_location = match generation_type {
+        GenerationType::Internal => quote! { crate },
+        GenerationType::External => quote! { ezffi },
+    };
+
     let (impl_ffi_header, free_converter) = if item.generics.gt_token.is_some() {
         (
-            quote! { impl<T> ezffi::IntoFfi<T> for #ty_name<T> },
+            quote! { impl<T> #trait_location::IntoFfi<T> for #ty_name<T> },
             quote! { *mut #ty_name<()> },
         )
     } else {
         (
-            quote! { impl ezffi::IntoFfi<()> for #ty_name },
+            quote! { impl #trait_location::IntoFfi<()> for #ty_name },
             quote! { *mut #ty_name },
         )
     };
 
     quote! {
-        #input
-
         #[derive(Clone, Copy)]
         #[repr(C)]
         pub struct #ffi_name {
@@ -49,7 +55,7 @@ pub fn expand_struct(item: ItemStruct) -> proc_macro2::TokenStream {
             }
         }
 
-        impl<T> ezffi::IntoRust<T> for #ffi_name {
+        impl<T> #trait_location::IntoRust<T> for #ffi_name {
             unsafe fn into_rust(&self) -> &T {
                 unsafe { &*(self.inner as *mut T) }
             }

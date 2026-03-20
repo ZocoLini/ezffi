@@ -1,3 +1,3 @@
-use ezffi_macros::export_extern_type_generic;
+use ezffi_macros::export_extern_type;
 
-export_extern_type_generic!(std::vec::Vec);
+export_extern_type!(Vec<T>);
