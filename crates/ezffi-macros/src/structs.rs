@@ -1,6 +1,6 @@
 use syn::{DeriveInput, ItemStruct};
 
-use crate::{GenerationType, ffi_free_fn_name, ffi_struct_name};
+use crate::{FFINamer, GenerationType};
 use quote::quote;
 
 pub fn expand_struct(
@@ -11,8 +11,8 @@ pub fn expand_struct(
     let input: DeriveInput = syn::parse2(input).expect("Must be valid code");
     let ty_name = &input.ident;
 
-    let ffi_name = ffi_struct_name(ty_name);
-    let free_fn_name = ffi_free_fn_name(ty_name);
+    let ffi_name = FFINamer::name_struct(ty_name);
+    let free_fn_name = FFINamer::name_free_fn(ty_name);
 
     super::FFITypeResolver::insert(&ty_name.to_string(), &ffi_name.to_string());
 

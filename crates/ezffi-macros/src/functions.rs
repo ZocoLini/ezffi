@@ -1,7 +1,7 @@
 use quote::quote;
 use syn::{FnArg, ItemFn, ItemImpl, ReturnType, Signature, Type};
 
-use crate::ffi_fn_name;
+use crate::FFINamer;
 
 pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let input: ItemImpl = syn::parse2(input).expect("Must be valid code");
@@ -36,7 +36,7 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     let mut call_args = Vec::new();
 
     // Generate the FFI function name
-    let ffi_fn_name = ffi_fn_name(fn_name, impl_ty);
+    let ffi_fn_name = FFINamer::name_fn(fn_name, impl_ty);
 
     for arg in inputs {
         match arg {

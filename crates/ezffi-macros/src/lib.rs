@@ -1,5 +1,4 @@
-use proc_macro2::Ident;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{Item, Type, parse_macro_input};
 
 use crate::{
@@ -8,9 +7,11 @@ use crate::{
 };
 
 mod functions;
+mod namer;
 mod structs;
 mod type_resolver;
 
+use namer::FFINamer;
 use type_resolver::FFITypeResolver;
 
 enum GenerationType {
@@ -103,25 +104,4 @@ pub fn export_as_identity(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         }
     }
     .into()
-}
-
-fn ffi_struct_name(name: &Ident) -> Ident {
-    format_ident!("Ffi{}", name)
-}
-
-fn ffi_fn_name(fn_name: &Ident, impl_ty: Option<&Type>) -> Ident {
-    if let Some(ty) = impl_ty {
-        let ty_ident = match ty {
-            syn::Type::Path(type_path) => type_path.path.segments.last().unwrap().ident.clone(),
-            _ => unimplemented!("Unsupported impl ty {}", quote!(#ty)),
-        };
-
-        format_ident!("ffi_{}_{}", ty_ident, fn_name)
-    } else {
-        format_ident!("ffi_{}", fn_name)
-    }
-}
-
-fn ffi_free_fn_name(ty_name: &Ident) -> Ident {
-    format_ident!("ffi_{}_free", ty_name)
 }
