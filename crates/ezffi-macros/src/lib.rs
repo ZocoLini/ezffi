@@ -120,6 +120,58 @@ pub fn export_extern_type_generic(input: proc_macro::TokenStream) -> proc_macro:
     .into()
 }
 
+#[proc_macro]
+pub fn export_extern_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let path = parse_macro_input!(input as syn::Path);
+
+    let ident = &path.segments.last().unwrap().ident;
+
+    let free_fn = format_ident!("ezffi_free_{}", ident);
+
+    quote! {
+        #[repr(C)]
+        pub struct #ident {
+            inner: *mut std::os::raw::c_void,
+        }
+
+        impl crate::IntoFfi<()> for #path {
+            type Ffi = #ident;
+
+            unsafe fn ref_into_ffi(&self) -> #ident {
+                #ident {
+                    inner: self as *const #path as *mut std::os::raw::c_void,
+                }
+            }
+
+            unsafe fn owned_into_ffi(self) -> #ident {
+                #ident {
+                    inner: Box::into_raw(Box::new(self)) as *mut std::os::raw::c_void,
+                }
+            }
+        }
+
+        impl<T> crate::IntoRust<T> for #ident {
+            unsafe fn into_rust(&self) -> &T {
+                &*(self.inner as *const T)
+            }
+
+            unsafe fn into_rust_mut(&mut self) -> &mut T {
+                &mut *(self.inner as *mut T)
+            }
+
+            unsafe fn into_rust_owned(self) -> T {
+                std::ptr::read(self.inner as *const T)
+            }
+        }
+
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn #free_fn(o: #ident) {
+            let _ = Box::from_raw(o.inner as *mut #path);
+        }
+    }
+    .into()
+}
+
 fn ffi_struct_name(name: &Ident) -> Ident {
     format_ident!("Ffi{}", name)
 }
