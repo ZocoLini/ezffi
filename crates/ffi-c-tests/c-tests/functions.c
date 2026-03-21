@@ -1,4 +1,4 @@
-#include "../include/test.h"
+#include "../include/ffi-c-tests/test.h"
 #include <assert.h>
 
 int main() {

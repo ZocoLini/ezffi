@@ -1,13 +1,26 @@
-use std::process::Command;
+use std::{env, fs, path::Path, process::Command};
 
 fn main() {
-    println!("cargo:rerun-if-changed=force-rebuild");
+    let crate_name = env::var("CARGO_PKG_NAME").unwrap();
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let target_dir = Path::new(&out_dir)
+        .ancestors()
+        .nth(3)
+        .expect("Failed to find target dir");
+
+    let include_dir = target_dir.join("include").join(&crate_name);
+
+    // Crear directorios
+    fs::create_dir_all(&include_dir).unwrap();
+
+    let header_path = include_dir.join("ezffi.h");
 
     let status = Command::new("cbindgen")
         .arg("-c")
         .arg("cbindgen.toml")
         .arg("--output")
-        .arg("include/ezffi.h")
+        .arg(header_path)
         .status()
         .expect("failed to run cbindgen");
 

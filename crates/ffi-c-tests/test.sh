@@ -15,7 +15,7 @@ cargo build -p ffi-c-tests
 EXIT_CODE=0
 
 rm -f include/ezffi.h
-cp ../ezffi/include/ezffi.h include/ezffi.h
+cp -r ../../target/debug/include/ ./
 
 for file in c-tests/*.c; do
   if gcc "$file" -Iinclude -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && ./test.bin; then

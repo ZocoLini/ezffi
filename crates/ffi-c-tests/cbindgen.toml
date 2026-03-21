@@ -1,4 +1,4 @@
-includes = ["ezffi.h"]
+includes = ["../ezffi/ezffi.h"]
 
 language = "C"
 
