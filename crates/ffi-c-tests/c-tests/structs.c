@@ -3,41 +3,41 @@
 
 int main() {
   // Car struct lifecycle, tests different params and return combinations
-  FfiCar carA = ffi_Car_new();
-  assert(ffi_Car_km(carA) == 0);
-  ffi_Car_drive(carA, 100);
-  assert(ffi_Car_km(carA) == 100);
+  FfiCar carA = ffi__ffi_car_new();
+  assert(ffi__ffi_car_km(carA) == 0);
+  ffi__ffi_car_drive(carA, 100);
+  assert(ffi__ffi_car_km(carA) == 100);
 
-  FfiCar carB = ffi_Car_new();
-  ffi_Car_drive(carB, 50);
-  assert(ffi_Car_km(carB) == 50);
+  FfiCar carB = ffi__ffi_car_new();
+  ffi__ffi_car_drive(carB, 50);
+  assert(ffi__ffi_car_km(carB) == 50);
 
-  ffi_Car_merge_cars(carA, carB);
-  assert(ffi_Car_km(carA) == 150);
+  ffi__ffi_car_merge_cars(carA, carB);
+  assert(ffi__ffi_car_km(carA) == 150);
 
-  FfiCar carC = ffi_Car_new();
-  ffi_Car_drive(carC, 200);
-  ffi_Car_receive_mut_ref(carA, carC);
-  assert(ffi_Car_km(carA) == 350);
+  FfiCar carC = ffi__ffi_car_new();
+  ffi__ffi_car_drive(carC, 200);
+  ffi__ffi_car_receive_mut_ref(carA, carC);
+  assert(ffi__ffi_car_km(carA) == 350);
 
-  ffi_Car_receive_ref(carA, carC);
-  assert(ffi_Car_km(carA) == 550);
+  ffi__ffi_car_receive_ref(carA, carC);
+  assert(ffi__ffi_car_km(carA) == 550);
   
-  ffi_Car_free(carA);
-  ffi_Car_free(carC);
+  ffi__ffi_car_free(carA);
+  ffi__ffi_car_free(carC);
   
   // Special struct with a reference counter to ensure memory is freed 
-  FfiDeallocationStruct obj = ffi_DeallocationStruct_new();
-  FfiDeallocationStruct clone1 = ffi_DeallocationStruct_manual_clone(obj);
-  FfiDeallocationStruct clone2 = ffi_DeallocationStruct_manual_clone(obj);
+  FfiDeallocationStruct obj = ffi__ffi_deallocation_struct_new();
+  FfiDeallocationStruct clone1 = ffi__ffi_deallocation_struct_manual_clone(obj);
+  FfiDeallocationStruct clone2 = ffi__ffi_deallocation_struct_manual_clone(obj);
 
-  assert(ffi_DeallocationStruct_get_counter(obj) == 3);
-  ffi_DeallocationStruct_consume(clone1);
+  assert(ffi__ffi_deallocation_struct_get_counter(obj) == 3);
+  ffi__ffi_deallocation_struct_consume(clone1);
 
-  assert(ffi_DeallocationStruct_get_counter(obj) == 2);
-  ffi_DeallocationStruct_free(clone2);
+  assert(ffi__ffi_deallocation_struct_get_counter(obj) == 2);
+  ffi__ffi_deallocation_struct_free(clone2);
 
-  assert(ffi_DeallocationStruct_get_counter(obj) == 1);
+  assert(ffi__ffi_deallocation_struct_get_counter(obj) == 1);
   
   return 0;
 }

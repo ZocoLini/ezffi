@@ -2,22 +2,22 @@
 #include <assert.h>
 
 int main() {
-  FfiGeneric a = ffi_Generic_new(1);
-  FfiGeneric b = ffi_Generic_new(2);
+  FfiGeneric a = ffi__ffi_generic_new(1);
+  FfiGeneric b = ffi__ffi_generic_new(2);
 
-  FfiGeneric c = ffi_Generic_add(a, b);
-  FfiGeneric d = ffi_Generic_multiply(b, b);
+  FfiGeneric c = ffi__ffi_generic_add(a, b);
+  FfiGeneric d = ffi__ffi_generic_multiply(b, b);
   FfiGeneric e = ffi_add2(a, b);
 
-  assert(ffi_Generic_get(c) == 3);
-  assert(ffi_Generic_get(d) == 4);
-  assert(ffi_Generic_get(e) == 3);
+  assert(ffi__ffi_generic_get(c) == 3);
+  assert(ffi__ffi_generic_get(d) == 4);
+  assert(ffi__ffi_generic_get(e) == 3);
 
-  ffi_Generic_free(a);
-  ffi_Generic_free(b);
-  ffi_Generic_free(c);
-  ffi_Generic_free(d);
-  ffi_Generic_free(e);
+  ffi__ffi_generic_free(a);
+  ffi__ffi_generic_free(b);
+  ffi__ffi_generic_free(c);
+  ffi__ffi_generic_free(d);
+  ffi__ffi_generic_free(e);
   
   return 0;
 }

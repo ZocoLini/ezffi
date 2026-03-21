@@ -64,7 +64,7 @@ impl FFITypeResolver {
                     let ty = format_ident!("{}", ffi_ty);
                     quote! { #ty }
                 } else {
-                    let ty = format_ident!("Ffi{}", ident);
+                    let ty = format_ident!("EzFfi{}", ident);
                     quote! { ezffi::#ty }
                 }
             }

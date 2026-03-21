@@ -1,3 +1,5 @@
+use std::{env, sync::LazyLock};
+
 use quote::quote;
 use syn::{Item, Type, parse_macro_input};
 
@@ -6,13 +8,18 @@ use crate::{
     structs::expand_struct,
 };
 
+mod config;
 mod functions;
 mod namer;
 mod structs;
 mod type_resolver;
 
+use config::CONFIG;
 use namer::FFINamer;
 use type_resolver::FFITypeResolver;
+
+static PKG_NAME: LazyLock<String> = LazyLock::new(|| env::var("CARGO_PKG_NAME").unwrap());
+static MANIFEST_DIR: LazyLock<String> = LazyLock::new(|| env::var("CARGO_MANIFEST_DIR").unwrap());
 
 enum GenerationType {
     Internal,

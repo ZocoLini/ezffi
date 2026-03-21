@@ -14,6 +14,7 @@ cargo build -p ffi-c-tests
 
 EXIT_CODE=0
 
+rm -f include/ezffi.h
 cp ../ezffi/include/ezffi.h include/ezffi.h
 
 for file in c-tests/*.c; do

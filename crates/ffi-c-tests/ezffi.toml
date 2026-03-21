@@ -1,0 +1,13 @@
+case_style = "SnakeCase" #[SnakeCase, CamelCase, PascalCase, ScreamingSnakeCase, Raw]
+
+[types]
+prefix = "ffi_"
+case_style = "PascalCase"
+
+[fns]
+prefix = "ffi_"
+sufix = ""
+
+[free_fns]
+prefix = "ffi_"
+sufix = ""
