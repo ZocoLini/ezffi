@@ -19,3 +19,9 @@ pub trait IntoRust<T> {
     unsafe fn into_rust_mut(&mut self) -> &mut T;
     unsafe fn into_rust_owned(self) -> T;
 }
+
+#[repr(u8)]
+pub enum TypeState {
+    Allocated = 0,
+    Freed = 1,
+}

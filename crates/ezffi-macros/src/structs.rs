@@ -38,6 +38,7 @@ pub fn expand_struct(
         #[repr(C)]
         pub struct #ffi_name {
             inner: *mut core::ffi::c_void,
+            state: u8,
         }
 
         #impl_ffi_header {
@@ -46,6 +47,7 @@ pub fn expand_struct(
             unsafe fn ref_into_ffi(&self) -> Self::Ffi {
                 let ffi_ty = #ffi_name {
                     inner: self as *const Self as *mut core::ffi::c_void,
+                    state: #trait_location::TypeState::Allocated as u8,
                 };
 
                 Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
@@ -53,6 +55,7 @@ pub fn expand_struct(
             unsafe fn owned_into_ffi(self) -> Self::Ffi {
                 let ffi_ty = #ffi_name {
                     inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
+                    state: #trait_location::TypeState::Allocated as u8,
                 };
 
                 Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
@@ -61,22 +64,41 @@ pub fn expand_struct(
 
         impl<T> #trait_location::IntoRust<T> for #ffi_name {
             unsafe fn into_rust(&self) -> &T {
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot borrow freed object");
+                }
+
                 unsafe { &*(self.inner as *mut T) }
             }
 
             unsafe fn into_rust_mut(&mut self) -> &mut T {
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot borrow freed object");
+                }
+
                 unsafe { &mut *(self.inner as *mut T) }
             }
 
-            unsafe fn into_rust_owned(self) -> T {
-                unsafe { *Box::from_raw(self.inner as *mut T) }
+            unsafe fn into_rust_owned(mut self) -> T {
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot own freed object");
+                }
+
+                let result = unsafe { *Box::from_raw(self.inner as *mut T) };
+                self.state = #trait_location::TypeState::Freed as u8;
+                result
             }
         }
 
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn #free_fn_name(o: *const #ffi_name) {
-            let o = unsafe { &*o };
+            let mut o = unsafe { &mut *(o as *mut #ffi_name) };
+            if o.state == #trait_location::TypeState::Freed as u8 {
+                panic!("Cannot free freed object");
+            }
+
             let _ = unsafe { Box::from_raw(o.inner as #free_converter) };
+            o.state = #trait_location::TypeState::Freed as u8;
         }
     }
 }

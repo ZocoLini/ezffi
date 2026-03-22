@@ -11,6 +11,7 @@ int main() {
   assert(ffi_get_element(vec, 10) == 10);
 
   ez_ffi_vec_free(vec);
+  ez_ffi_vec_free(vec);
   
   return 0;
 }
