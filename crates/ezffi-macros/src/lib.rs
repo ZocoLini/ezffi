@@ -1,7 +1,7 @@
 use std::{env, sync::LazyLock};
 
 use quote::quote;
-use syn::{Item, Type, parse_macro_input};
+use syn::{Item, parse_macro_input};
 
 use crate::{
     functions::{expand_fn, expand_impl},
@@ -77,38 +77,4 @@ pub fn export_extern_type(input: proc_macro::TokenStream) -> proc_macro::TokenSt
         dummy_struct,
         GenerationType::Internal,
     )
-}
-
-#[proc_macro]
-pub fn export_as_identity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let ty = parse_macro_input!(input as Type);
-
-    quote! {
-        impl crate::IntoFfi<()> for #ty {
-            type Ffi = #ty;
-
-            unsafe fn owned_into_ffi(self) -> Self::Ffi {
-                self
-            }
-
-            unsafe fn ref_into_ffi(&self) -> Self::Ffi {
-                *self
-            }
-        }
-
-        impl crate::IntoRust<#ty> for #ty {
-            unsafe fn into_rust(&self) -> &#ty {
-                self
-            }
-
-            unsafe fn into_rust_mut(&mut self) -> &mut #ty {
-                self
-            }
-
-            unsafe fn into_rust_owned(self) -> #ty {
-                self
-            }
-        }
-    }
-    .into()
 }

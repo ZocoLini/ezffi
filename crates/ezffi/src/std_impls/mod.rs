@@ -1,4 +1,3 @@
-mod primitives;
 mod string;
 mod vec;
 

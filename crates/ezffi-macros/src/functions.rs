@@ -145,12 +145,18 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
 
     // Return conversion
     let ret_conversion = match output {
-        ReturnType::Default => quote! { result.owned_into_ffi() },
-        ReturnType::Type(_, ty) => match &**ty {
-            syn::Type::Reference(_) => quote! { result.ref_into_ffi() },
-            syn::Type::Path(_) => quote! { result.owned_into_ffi() },
-            _ => unimplemented!("Return type unsupported {}", quote! { #ty }),
-        },
+        ReturnType::Default => quote! {},
+        ReturnType::Type(_, ty) => {
+            if FFITypeResolver::is_primitive(ty) {
+                quote! { result }
+            } else {
+                match &**ty {
+                    syn::Type::Reference(_) => quote! { result.ref_into_ffi() },
+                    syn::Type::Path(_) => quote! { result.owned_into_ffi() },
+                    _ => unimplemented!("Return type unsupported {}", quote! { #ty }),
+                }
+            }
+        }
     };
 
     quote! {

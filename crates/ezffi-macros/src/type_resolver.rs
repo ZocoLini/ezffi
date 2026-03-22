@@ -7,31 +7,13 @@ use quote::{format_ident, quote};
 use syn::Type;
 
 // Maps Rust type names to FFI type names
-static TYPE_NAME_MAP: LazyLock<Arc<RwLock<HashMap<String, String>>>> = LazyLock::new(|| {
-    let mut hashmap = HashMap::new();
+static TYPE_NAME_MAP: LazyLock<Arc<RwLock<HashMap<String, String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
 
-    // primitives compatible with FFI by default
-    hashmap.insert("i8".to_string(), "i8".to_string());
-    hashmap.insert("u8".to_string(), "u8".to_string());
-    hashmap.insert("i16".to_string(), "i16".to_string());
-    hashmap.insert("u16".to_string(), "u16".to_string());
-    hashmap.insert("i32".to_string(), "i32".to_string());
-    hashmap.insert("u32".to_string(), "u32".to_string());
-    hashmap.insert("i64".to_string(), "i64".to_string());
-    hashmap.insert("u64".to_string(), "u64".to_string());
-    hashmap.insert("i128".to_string(), "i128".to_string());
-    hashmap.insert("u128".to_string(), "u128".to_string());
-    hashmap.insert("isize".to_string(), "isize".to_string());
-    hashmap.insert("usize".to_string(), "usize".to_string());
-
-    hashmap.insert("f32".to_string(), "f32".to_string());
-    hashmap.insert("f64".to_string(), "f64".to_string());
-
-    hashmap.insert("bool".to_string(), "bool".to_string());
-    hashmap.insert("char".to_string(), "char".to_string());
-
-    Arc::new(RwLock::new(hashmap))
-});
+const PRIMITIVE_TYPES: &[&str] = &[
+    "bool", "char", "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128", "isize",
+    "usize", "f32", "f64",
+];
 
 pub struct FFITypeResolver;
 
@@ -46,25 +28,7 @@ impl FFITypeResolver {
     pub fn is_primitive(ty: &syn::Type) -> bool {
         if let syn::Type::Path(p) = ty {
             if let Some(ident) = p.path.get_ident() {
-                matches!(
-                    ident.to_string().as_str(),
-                    "bool"
-                        | "char"
-                        | "i8"
-                        | "u8"
-                        | "i16"
-                        | "u16"
-                        | "i32"
-                        | "u32"
-                        | "i64"
-                        | "u64"
-                        | "i128"
-                        | "u128"
-                        | "isize"
-                        | "usize"
-                        | "f32"
-                        | "f64"
-                )
+                PRIMITIVE_TYPES.contains(&ident.to_string().as_str())
             } else {
                 false
             }
@@ -74,6 +38,10 @@ impl FFITypeResolver {
     }
 
     pub fn ffi_ty_for(ty: &syn::Type, self_repl: Option<&Type>) -> proc_macro2::TokenStream {
+        if Self::is_primitive(ty) {
+            return quote! { #ty };
+        }
+
         match ty {
             syn::Type::Reference(r) => {
                 let ty = Self::ffi_ty_for(&r.elem, self_repl);
