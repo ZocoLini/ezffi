@@ -4,9 +4,9 @@
 int main() {
   assert(ffi_return_primitive() == 8);
   
-  FfiSimpleStruct a = ffi_new_simple_struct();
-  FfiSimpleStruct b = ffi_new_simple_struct();
-  FfiSimpleStruct c = ffi_new_simple_struct();
+  const FfiSimpleStruct *a = ffi_new_simple_struct();
+  const FfiSimpleStruct *b = ffi_new_simple_struct();
+  const FfiSimpleStruct *c = ffi_new_simple_struct();
   
   ffi_test(a, b, c);
   ffi_receive_simple_struct(a);

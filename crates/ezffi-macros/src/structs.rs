@@ -41,17 +41,21 @@ pub fn expand_struct(
         }
 
         #impl_ffi_header {
-            type Ffi = #ffi_name;
+            type Ffi = *const #ffi_name;
 
             unsafe fn ref_into_ffi(&self) -> Self::Ffi {
-                #ffi_name {
+                let ffi_ty = #ffi_name {
                     inner: self as *const Self as *mut core::ffi::c_void,
-                }
+                };
+
+                Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
             }
             unsafe fn owned_into_ffi(self) -> Self::Ffi {
-                #ffi_name {
+                let ffi_ty = #ffi_name {
                     inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
-                }
+                };
+
+                Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
             }
         }
 
@@ -70,7 +74,8 @@ pub fn expand_struct(
         }
 
         #[unsafe(no_mangle)]
-        pub unsafe extern "C" fn #free_fn_name(o: #ffi_name) {
+        pub unsafe extern "C" fn #free_fn_name(o: *const #ffi_name) {
+            let o = unsafe { &*o };
             let _ = unsafe { Box::from_raw(o.inner as #free_converter) };
         }
     }

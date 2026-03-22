@@ -43,6 +43,36 @@ impl FFITypeResolver {
             .insert(ty_name.to_string(), ffi_ty_name.to_string());
     }
 
+    pub fn is_primitive(ty: &syn::Type) -> bool {
+        if let syn::Type::Path(p) = ty {
+            if let Some(ident) = p.path.get_ident() {
+                matches!(
+                    ident.to_string().as_str(),
+                    "bool"
+                        | "char"
+                        | "i8"
+                        | "u8"
+                        | "i16"
+                        | "u16"
+                        | "i32"
+                        | "u32"
+                        | "i64"
+                        | "u64"
+                        | "i128"
+                        | "u128"
+                        | "isize"
+                        | "usize"
+                        | "f32"
+                        | "f64"
+                )
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
     pub fn ffi_ty_for(ty: &syn::Type, self_repl: Option<&Type>) -> proc_macro2::TokenStream {
         match ty {
             syn::Type::Reference(r) => {

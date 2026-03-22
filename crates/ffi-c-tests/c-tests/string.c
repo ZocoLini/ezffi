@@ -2,8 +2,8 @@
 #include <assert.h>
 
 int main() {
-  EzFfiString s = ffi_string_new();
-  assert(s.inner != NULL);
+  const EzFfiString *s = ffi_string_new();
+  assert(s->inner != NULL);
   
   ez_ffi_string_free(s);
 

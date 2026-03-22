@@ -1,7 +1,7 @@
 use quote::quote;
 use syn::{FnArg, ItemFn, ItemImpl, ReturnType, Signature, Type};
 
-use crate::FFINamer;
+use crate::{FFINamer, FFITypeResolver};
 
 pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let input: ItemImpl = syn::parse2(input).expect("Must be valid code");
@@ -48,20 +48,24 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
 
                 let self_conversion = match (is_ref, is_mut) {
                     (false, false) => quote! {
+                        let mut this = &mut *(this as *mut #ffi_ty);
                         let mut this = this.into_rust_owned();
                     },
                     (true, false) => quote! {
+                        let mut this = &*this;
                         let this = this.into_rust();
                     },
                     (false, true) => quote! {
+                        let this = &*this;
                         let mut this = this.into_rust_owned();
                     },
                     (true, true) => quote! {
+                        let mut this = *this;
                         let mut this = this.into_rust_mut();
                     },
                 };
 
-                ffi_params.push(quote! { mut this: #ffi_ty });
+                ffi_params.push(quote! { mut this: *const #ffi_ty });
                 conversions.push(self_conversion);
                 call_args.push(quote! { this });
             }
@@ -73,30 +77,39 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
                     }
                 };
                 let ty = &pat_type.ty;
-                let ffi_ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
 
-                let ty_conversion = match &*pat_type.ty {
-                    Type::Reference(r) => {
-                        if r.mutability.is_some() {
-                            quote! {
-                                let mut #name = #name.into_rust_mut();
-                            }
-                        } else {
-                            quote! {
-                                let #name = #name.into_rust();
+                if FFITypeResolver::is_primitive(ty) {
+                    ffi_params.push(quote! { mut #name: #ty });
+                } else {
+                    let ffi_ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
+
+                    let ty_conversion = match &*pat_type.ty {
+                        Type::Reference(r) => {
+                            if r.mutability.is_some() {
+                                quote! {
+                                    let mut #name = &mut *(#name as *mut #ffi_ty);
+                                    let mut #name = #name.into_rust_mut();
+                                }
+                            } else {
+                                quote! {
+                                    let #name = &*#name;
+                                    let #name = #name.into_rust();
+                                }
                             }
                         }
-                    }
-                    Type::Path(_) => {
-                        quote! {
-                            let mut #name = #name.into_rust_owned();
+                        Type::Path(_) => {
+                            quote! {
+                                let mut #name = *#name;
+                                let mut #name = #name.into_rust_owned();
+                            }
                         }
-                    }
-                    _ => unimplemented!("Unsupported parameter with type {}", quote! { #ty }),
-                };
+                        _ => unimplemented!("Unsupported parameter with type {}", quote! { #ty }),
+                    };
 
-                ffi_params.push(quote! { mut #name: #ffi_ty });
-                conversions.push(ty_conversion);
+                    ffi_params.push(quote! { mut #name: *const #ffi_ty });
+                    conversions.push(ty_conversion);
+                }
+
                 call_args.push(quote! { #name });
             }
         }
@@ -119,7 +132,15 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     // Function return type
     let ffi_ret = match output {
         ReturnType::Default => quote! { () },
-        ReturnType::Type(_, ty) => super::FFITypeResolver::ffi_ty_for(ty, impl_ty),
+        ReturnType::Type(_, ty) => {
+            if FFITypeResolver::is_primitive(ty) {
+                let ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
+                quote! { #ty }
+            } else {
+                let ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
+                quote! { *const #ty }
+            }
+        }
     };
 
     // Return conversion
