@@ -18,7 +18,7 @@ rm -f include/ezffi.h
 cp -r ../../target/debug/include/ ./
 
 for file in c-tests/*.c; do
-  if gcc "$file" -Iinclude -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && ./test.bin; then
+  if gcc "$file" -Iinclude -L../../target/debug -lffi_c_tests -lezffi -o test.bin -g && MallocStackLogging=1 leaks --atExit -- ./test.bin; then
     echo -e "${GREEN}Passed: $file${NC}"
   else
     echo -e "${RED}Failed: $file${NC}"

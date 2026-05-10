@@ -133,13 +133,8 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     let ffi_ret = match output {
         ReturnType::Default => quote! { () },
         ReturnType::Type(_, ty) => {
-            if FFITypeResolver::is_primitive(ty) {
-                let ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
-                quote! { #ty }
-            } else {
-                let ty = super::FFITypeResolver::ffi_ty_for(ty, impl_ty);
-                quote! { *const #ty }
-            }
+            let ty = FFITypeResolver::ffi_ty_for(ty, impl_ty);
+            quote! { #ty }
         }
     };
 

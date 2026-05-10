@@ -42,23 +42,19 @@ pub fn expand_struct(
         }
 
         #impl_ffi_header {
-            type Ffi = *const #ffi_name;
+            type Ffi = #ffi_name;
 
             unsafe fn ref_into_ffi(&self) -> Self::Ffi {
-                let ffi_ty = #ffi_name {
+                #ffi_name {
                     inner: self as *const Self as *mut core::ffi::c_void,
-                    state: #trait_location::TypeState::Allocated as u8,
-                };
-
-                Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
+                    state: #trait_location::TypeState::Ref as u8,
+                }
             }
             unsafe fn owned_into_ffi(self) -> Self::Ffi {
-                let ffi_ty = #ffi_name {
+                #ffi_name {
                     inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
-                    state: #trait_location::TypeState::Allocated as u8,
-                };
-
-                Box::into_raw(Box::new(ffi_ty)) as *const #ffi_name
+                    state: #trait_location::TypeState::Owned as u8,
+                }
             }
         }
 
@@ -84,6 +80,10 @@ pub fn expand_struct(
                     panic!("Cannot own freed object");
                 }
 
+                if self.state == #trait_location::TypeState::Ref as u8 {
+                    panic!("Cannot own an objects created from a reference");
+                }
+
                 let result = unsafe { *Box::from_raw(self.inner as *mut T) };
                 self.state = #trait_location::TypeState::Freed as u8;
                 result
@@ -97,6 +97,10 @@ pub fn expand_struct(
                 panic!("Cannot free freed object");
             }
 
+            if o.state == #trait_location::TypeState::Ref as u8 {
+                panic!("Cannot free objects created from a reference");
+            }
+            
             let _ = unsafe { Box::from_raw(o.inner as #free_converter) };
             o.state = #trait_location::TypeState::Freed as u8;
         }

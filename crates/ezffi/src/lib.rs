@@ -22,6 +22,7 @@ pub trait IntoRust<T> {
 
 #[repr(u8)]
 pub enum TypeState {
-    Allocated = 0,
-    Freed = 1,
+    Owned = 0,
+    Ref = 1,
+    Freed = 2,
 }
