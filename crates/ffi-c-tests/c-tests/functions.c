@@ -3,18 +3,21 @@
 
 int main() {
   assert(ffi_return_primitive() == 8);
-  
-  const FfiSimpleStruct *a = ffi_new_simple_struct();
-  const FfiSimpleStruct *b = ffi_new_simple_struct();
-  const FfiSimpleStruct *c = ffi_new_simple_struct();
-  
-  ffi_test(a, b, c);
-  ffi_receive_simple_struct(a);
-  ffi_receive_simple_struct_mut(a);
-  
-  ffi_receive_simple_struct_owned(a);
-  ffi_receive_simple_struct_owned(b);
-  ffi_receive_simple_struct_owned(c);
+
+  FfiSimpleStruct owned = ffi_new_simple_struct();
+  FfiSimpleStruct shared = ffi_new_simple_struct();
+  FfiSimpleStruct mutable = ffi_new_simple_struct();
+  ffi_test(&owned, &shared, &mutable);
+  ffi__ffi_simple_struct_free(&shared);
+  ffi__ffi_simple_struct_free(&mutable);
+
+  FfiSimpleStruct r = ffi_new_simple_struct();
+  ffi_receive_simple_struct(&r);
+  ffi_receive_simple_struct_mut(&r);
+  ffi__ffi_simple_struct_free(&r);
+
+  FfiSimpleStruct o = ffi_new_simple_struct();
+  ffi_receive_simple_struct_owned(&o);
 
   return 0;
 }
