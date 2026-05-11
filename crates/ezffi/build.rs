@@ -1,7 +1,10 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::{env, fs};
 
 fn main() {
+    activate_git_hooks();
+
     let crate_name = env::var("CARGO_PKG_NAME").unwrap();
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -29,4 +32,30 @@ fn main() {
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(&output_path);
+}
+
+fn activate_git_hooks() {
+    let Some(manifest_dir) = env::var("CARGO_MANIFEST_DIR").ok() else {
+        return;
+    };
+    let mut dir = PathBuf::from(manifest_dir);
+    let workspace_root = loop {
+        if dir.join(".git").exists() {
+            break dir;
+        }
+        if !dir.pop() {
+            return;
+        }
+    };
+
+    let hooks_dir = workspace_root.join(".githooks");
+    if !hooks_dir.is_dir() {
+        return;
+    }
+
+    let _ = Command::new("git")
+        .args(["config", "core.hooksPath", ".githooks"])
+        .current_dir(&workspace_root)
+        .status()
+        .ok();
 }

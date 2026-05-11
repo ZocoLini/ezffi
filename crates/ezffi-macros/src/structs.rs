@@ -100,7 +100,7 @@ pub fn expand_struct(
             if o.state == #trait_location::TypeState::Ref as u8 {
                 panic!("Cannot free objects created from a reference");
             }
-            
+
             let _ = unsafe { Box::from_raw(o.inner as #free_converter) };
             o.state = #trait_location::TypeState::Freed as u8;
         }
