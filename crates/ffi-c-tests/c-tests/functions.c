@@ -7,7 +7,9 @@ int main() {
   FfiSimpleStruct owned = ffi_new_simple_struct();
   FfiSimpleStruct shared = ffi_new_simple_struct();
   FfiSimpleStruct mutable = ffi_new_simple_struct();
+
   ffi_test(&owned, &shared, &mutable);
+
   ffi__ffi_simple_struct_free(&shared);
   ffi__ffi_simple_struct_free(&mutable);
 
