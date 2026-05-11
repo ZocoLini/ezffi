@@ -21,15 +21,28 @@ pub fn expand_struct(
         GenerationType::External => quote! { ezffi },
     };
 
-    let (impl_ffi_header, free_converter) = if item.generics.gt_token.is_some() {
+    // Per-monomorphization drop fn so generic types deallocate with the right
+    // Layout. The macro can't know the concrete T at expansion time, so the
+    // FFI struct carries a function pointer captured by `owned_into_ffi`.
+    let (impl_ffi_header, drop_fn_def, drop_fn_ref) = if item.generics.gt_token.is_some() {
         (
             quote! { impl<T> #trait_location::IntoFfi<T> for #ty_name<T> },
-            quote! { *mut #ty_name<()> },
+            quote! {
+                unsafe extern "C" fn __ezffi_drop<T>(p: *mut core::ffi::c_void) {
+                    drop(unsafe { Box::from_raw(p as *mut #ty_name<T>) });
+                }
+            },
+            quote! { __ezffi_drop::<T> },
         )
     } else {
         (
             quote! { impl #trait_location::IntoFfi<()> for #ty_name },
-            quote! { *mut #ty_name },
+            quote! {
+                unsafe extern "C" fn __ezffi_drop(p: *mut core::ffi::c_void) {
+                    drop(unsafe { Box::from_raw(p as *mut #ty_name) });
+                }
+            },
+            quote! { __ezffi_drop },
         )
     };
 
@@ -38,25 +51,32 @@ pub fn expand_struct(
         #[repr(C)]
         pub struct #ffi_name {
             inner: *mut core::ffi::c_void,
+            drop_fn: unsafe extern "C" fn(*mut core::ffi::c_void),
             state: u8,
         }
 
-        #impl_ffi_header {
-            type Ffi = #ffi_name;
+        const _: () = {
+            #drop_fn_def
 
-            unsafe fn ref_into_ffi(&self) -> Self::Ffi {
-                #ffi_name {
-                    inner: self as *const Self as *mut core::ffi::c_void,
-                    state: #trait_location::TypeState::Ref as u8,
+            #impl_ffi_header {
+                type Ffi = #ffi_name;
+
+                unsafe fn ref_into_ffi(&self) -> Self::Ffi {
+                    #ffi_name {
+                        inner: self as *const Self as *mut core::ffi::c_void,
+                        drop_fn: #drop_fn_ref,
+                        state: #trait_location::TypeState::Ref as u8,
+                    }
+                }
+                unsafe fn owned_into_ffi(self) -> Self::Ffi {
+                    #ffi_name {
+                        inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
+                        drop_fn: #drop_fn_ref,
+                        state: #trait_location::TypeState::Owned as u8,
+                    }
                 }
             }
-            unsafe fn owned_into_ffi(self) -> Self::Ffi {
-                #ffi_name {
-                    inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
-                    state: #trait_location::TypeState::Owned as u8,
-                }
-            }
-        }
+        };
 
         impl<T> #trait_location::IntoRust<T> for #ffi_name {
             unsafe fn into_rust(&self) -> &T {
@@ -101,7 +121,7 @@ pub fn expand_struct(
                 panic!("Cannot free objects created from a reference");
             }
 
-            let _ = unsafe { Box::from_raw(o.inner as #free_converter) };
+            unsafe { (o.drop_fn)(o.inner); }
             o.state = #trait_location::TypeState::Freed as u8;
         }
     }

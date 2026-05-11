@@ -19,5 +19,9 @@ int main() {
   ffi__ffi_generic_free(&d);
   ffi__ffi_generic_free(&e);
 
+  FfiGeneric f = ffi__ffi_generic_new2();
+  ffi__ffi_generic_check(&f);
+  ffi__ffi_generic_free(&f);
+
   return 0;
 }
