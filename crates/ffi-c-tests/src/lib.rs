@@ -1,3 +1,4 @@
+mod enums;
 mod funcions;
 mod generics;
 mod string;

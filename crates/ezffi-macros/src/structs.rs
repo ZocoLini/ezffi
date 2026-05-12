@@ -1,4 +1,4 @@
-use syn::{DeriveInput, ItemStruct};
+use syn::{Generics, Ident, ItemEnum, ItemStruct};
 
 use crate::{FFINamer, GenerationType};
 use quote::quote;
@@ -7,10 +7,18 @@ pub fn expand_struct(
     item: ItemStruct,
     generation_type: GenerationType,
 ) -> proc_macro2::TokenStream {
-    let input = quote! { #item };
-    let input: DeriveInput = syn::parse2(input).expect("Must be valid code");
-    let ty_name = &input.ident;
+    expand_type(&item.ident, &item.generics, generation_type)
+}
 
+pub fn expand_enum(item: ItemEnum, generation_type: GenerationType) -> proc_macro2::TokenStream {
+    expand_type(&item.ident, &item.generics, generation_type)
+}
+
+fn expand_type(
+    ty_name: &Ident,
+    generics: &Generics,
+    generation_type: GenerationType,
+) -> proc_macro2::TokenStream {
     let ffi_name = FFINamer::name_struct(ty_name);
     let free_fn_name = FFINamer::name_free_fn(ty_name);
 
@@ -24,7 +32,7 @@ pub fn expand_struct(
     // Per-monomorphization drop fn so generic types deallocate with the right
     // Layout. The macro can't know the concrete T at expansion time, so the
     // FFI struct carries a function pointer captured by `owned_into_ffi`.
-    let (impl_ffi_header, drop_fn_def, drop_fn_ref) = if item.generics.gt_token.is_some() {
+    let (impl_ffi_header, drop_fn_def, drop_fn_ref) = if generics.gt_token.is_some() {
         (
             quote! { impl<T> #trait_location::IntoFfi<T> for #ty_name<T> },
             quote! {

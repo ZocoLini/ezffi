@@ -5,7 +5,7 @@ use syn::{Item, parse_macro_input};
 
 use crate::{
     functions::{expand_fn, expand_impl},
-    structs::expand_struct,
+    structs::{expand_enum, expand_struct},
 };
 
 mod config;
@@ -57,6 +57,7 @@ fn export_impl(
 
     match item_to_export {
         Item::Struct(item) => expand_struct(item, generation_type).into(),
+        Item::Enum(item) => expand_enum(item, generation_type).into(),
         Item::Fn(_) => expand_fn(item.into()).into(),
         Item::Impl(_) => expand_impl(item.into()).into(),
         _ => unimplemented!(
