@@ -1,9 +1,5 @@
 language = "C"
 
-[parse]
-parse_deps = true
-include = ["../../ezffi/include/ezffi.h"]
-
 [parse.expand]
 crates = ["ezffi"]
 default_features = true
