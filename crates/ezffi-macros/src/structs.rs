@@ -60,6 +60,7 @@ fn expand_type(
         pub struct #ffi_name {
             inner: *mut core::ffi::c_void,
             drop_fn: unsafe extern "C" fn(*mut core::ffi::c_void),
+            #[cfg(debug_assertions)]
             state: u8,
         }
 
@@ -73,6 +74,7 @@ fn expand_type(
                     #ffi_name {
                         inner: self as *const Self as *mut core::ffi::c_void,
                         drop_fn: #drop_fn_ref,
+                        #[cfg(debug_assertions)]
                         state: #trait_location::TypeState::Ref as u8,
                     }
                 }
@@ -80,6 +82,7 @@ fn expand_type(
                     #ffi_name {
                         inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
                         drop_fn: #drop_fn_ref,
+                        #[cfg(debug_assertions)]
                         state: #trait_location::TypeState::Owned as u8,
                     }
                 }
@@ -88,6 +91,7 @@ fn expand_type(
 
         impl<T> #trait_location::IntoRust<T> for #ffi_name {
             unsafe fn into_rust(&self) -> &T {
+                #[cfg(debug_assertions)]
                 if self.state == #trait_location::TypeState::Freed as u8 {
                     panic!("Cannot borrow freed object");
                 }
@@ -96,6 +100,7 @@ fn expand_type(
             }
 
             unsafe fn into_rust_mut(&mut self) -> &mut T {
+                #[cfg(debug_assertions)]
                 if self.state == #trait_location::TypeState::Freed as u8 {
                     panic!("Cannot borrow freed object");
                 }
@@ -104,16 +109,19 @@ fn expand_type(
             }
 
             unsafe fn into_rust_owned(mut self) -> T {
+                #[cfg(debug_assertions)]
                 if self.state == #trait_location::TypeState::Freed as u8 {
                     panic!("Cannot own freed object");
                 }
 
+                #[cfg(debug_assertions)]
                 if self.state == #trait_location::TypeState::Ref as u8 {
                     panic!("Cannot own an objects created from a reference");
                 }
 
                 let result = unsafe { *Box::from_raw(self.inner as *mut T) };
-                self.state = #trait_location::TypeState::Freed as u8;
+                #[cfg(debug_assertions)]
+                { self.state = #trait_location::TypeState::Freed as u8; }
                 result
             }
         }
@@ -121,16 +129,19 @@ fn expand_type(
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn #free_fn_name(o: *const #ffi_name) {
             let mut o = unsafe { &mut *(o as *mut #ffi_name) };
+            #[cfg(debug_assertions)]
             if o.state == #trait_location::TypeState::Freed as u8 {
                 panic!("Cannot free freed object");
             }
 
+            #[cfg(debug_assertions)]
             if o.state == #trait_location::TypeState::Ref as u8 {
                 panic!("Cannot free objects created from a reference");
             }
 
             unsafe { (o.drop_fn)(o.inner); }
-            o.state = #trait_location::TypeState::Freed as u8;
+            #[cfg(debug_assertions)]
+            { o.state = #trait_location::TypeState::Freed as u8; }
         }
     }
 }

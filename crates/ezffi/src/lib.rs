@@ -20,6 +20,7 @@ pub trait IntoRust<T> {
     unsafe fn into_rust_owned(self) -> T;
 }
 
+#[cfg(debug_assertions)]
 #[repr(u8)]
 pub enum TypeState {
     Owned = 0,

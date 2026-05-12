@@ -140,9 +140,15 @@ fn build_header(
     after_include: Option<&str>,
     output_path: &Path,
 ) {
+    let profile = match env::var("PROFILE").as_deref() {
+        Ok("release") => cbindgen::Profile::Release,
+        _ => cbindgen::Profile::Debug,
+    };
+
     let mut builder = cbindgen::Builder::new()
         .with_crate(crate_dir)
-        .with_config(base_config.clone());
+        .with_config(base_config.clone())
+        .with_parse_expand_profile(profile);
 
     for item in exclude_items {
         builder = builder.exclude_item(*item);
