@@ -33,3 +33,29 @@ impl TestEnum {
         }
     }
 }
+
+#[ezffi::export]
+pub enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+#[ezffi::export]
+impl Color {
+    pub fn new_red() -> Self {
+        Color::Red
+    }
+
+    pub fn next(self) -> Self {
+        match self {
+            Color::Red => Color::Green,
+            Color::Green => Color::Blue,
+            Color::Blue => Color::Red,
+        }
+    }
+
+    pub fn check_is_green(&self) -> bool {
+        matches!(self, Color::Green)
+    }
+}

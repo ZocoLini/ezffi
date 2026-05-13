@@ -5,3 +5,7 @@ language = "C"
 [parse.expand]
 crates = ["ffi-c-tests"]
 default_features = true
+
+[enum]
+prefix_with_name = true
+

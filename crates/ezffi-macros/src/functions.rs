@@ -3,13 +3,12 @@ use syn::{FnArg, ItemFn, ItemImpl, ReturnType, Signature, Type};
 
 use crate::{FFINamer, FFITypeResolver};
 
-pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let input: ItemImpl = syn::parse2(input).expect("Must be valid code");
-    let impl_ty = &input.self_ty;
+pub fn expand_impl(item: &ItemImpl) -> proc_macro2::TokenStream {
+    let impl_ty = &item.self_ty;
 
     let mut wrappers = Vec::new();
 
-    for impl_item in &input.items {
+    for impl_item in &item.items {
         if let syn::ImplItem::Fn(method) = impl_item {
             wrappers.push(generate_fn_wrapper(Some(impl_ty), &method.sig));
         }
@@ -18,10 +17,8 @@ pub fn expand_impl(input: proc_macro2::TokenStream) -> proc_macro2::TokenStream 
     quote! { #( #wrappers )* }
 }
 
-pub fn expand_fn(item: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let input: ItemFn = syn::parse2(item).expect("Must be valid code");
-
-    let wrapper = generate_fn_wrapper(None, &input.sig);
+pub fn expand_fn(item: &ItemFn) -> proc_macro2::TokenStream {
+    let wrapper = generate_fn_wrapper(None, &item.sig);
 
     quote! { #wrapper }
 }
