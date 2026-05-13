@@ -32,8 +32,9 @@ esac
 
 TARGET_DIR="../../target/debug"
 
-cargo build -p ezffi
-cargo build -p ffi-c-tests
+# Build both in one invocation so cargo unifies features (ezffi inherits
+# `generics` from ffi-c-tests' dep declaration).
+cargo build -p ezffi -p ffi-c-tests
 
 EXIT_CODE=0
 

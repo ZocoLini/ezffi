@@ -13,3 +13,6 @@ proc-macro2 = { version = "1.0.106" }
 
 toml = { version = "1.0.7" }
 serde = { version = "1.0.228", features = ["derive"] }
+
+[features]
+generics = []

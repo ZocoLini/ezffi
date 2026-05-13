@@ -7,17 +7,20 @@ pub fn expand_struct(
     item: &ItemStruct,
     generation_type: GenerationType,
 ) -> proc_macro2::TokenStream {
-    expand_type(&item.ident, &item.generics, generation_type)
+    if item.generics.gt_token.is_some() {
+        expand_generic_type(&item.ident, &item.generics, generation_type)
+    } else {
+        expand_type(&item.ident, generation_type)
+    }
 }
 
 pub fn expand_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_macro2::TokenStream {
-    expand_type(&item.ident, &item.generics, generation_type)
+    if item.generics.gt_token.is_some() {
+        panic!("generic enums are not supported by #[ezffi::export]");
+    }
+    expand_type(&item.ident, generation_type)
 }
 
-/// Variants are all unit → emit a real C enum (renamed with FFI prefix) plus
-/// an alias and identity `IntoFfi`/`IntoRust` impls so the standard wrapper
-/// machinery (which always uses pointer-passing and trait method calls) works
-/// without special-casing.
 pub fn expand_c_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_macro2::TokenStream {
     let user_name = &item.ident;
     let ffi_name = FFINamer::name_struct(user_name);
@@ -64,7 +67,106 @@ pub fn expand_c_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_m
     }
 }
 
-fn expand_type(
+fn expand_type(ty_name: &Ident, generation_type: GenerationType) -> proc_macro2::TokenStream {
+    let ffi_name = FFINamer::name_struct(ty_name);
+    let free_fn_name = FFINamer::name_free_fn(ty_name);
+
+    super::FFITypeResolver::insert(&ty_name.to_string(), &ffi_name.to_string());
+
+    let trait_location = match generation_type {
+        GenerationType::Internal => quote! { crate },
+        GenerationType::External => quote! { ezffi },
+    };
+
+    quote! {
+        #[derive(Clone, Copy)]
+        #[repr(C)]
+        pub struct #ffi_name {
+            inner: *mut core::ffi::c_void,
+            #[cfg(debug_assertions)]
+            state: u8,
+        }
+
+        const _: () = {
+            impl #trait_location::IntoFfi<()> for #ty_name {
+                type Ffi = #ffi_name;
+
+                unsafe fn ref_into_ffi(&self) -> Self::Ffi {
+                    #ffi_name {
+                        inner: self as *const Self as *mut core::ffi::c_void,
+                        #[cfg(debug_assertions)]
+                        state: #trait_location::TypeState::Ref as u8,
+                    }
+                }
+                unsafe fn owned_into_ffi(self) -> Self::Ffi {
+                    #ffi_name {
+                        inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
+                        #[cfg(debug_assertions)]
+                        state: #trait_location::TypeState::Owned as u8,
+                    }
+                }
+            }
+        };
+
+        impl<T> #trait_location::IntoRust<T> for #ffi_name {
+            unsafe fn into_rust(&self) -> &T {
+                #[cfg(debug_assertions)]
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot borrow freed object");
+                }
+
+                unsafe { &*(self.inner as *mut T) }
+            }
+
+            unsafe fn into_rust_mut(&mut self) -> &mut T {
+                #[cfg(debug_assertions)]
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot borrow freed object");
+                }
+
+                unsafe { &mut *(self.inner as *mut T) }
+            }
+
+            unsafe fn into_rust_owned(mut self) -> T {
+                #[cfg(debug_assertions)]
+                if self.state == #trait_location::TypeState::Freed as u8 {
+                    panic!("Cannot own freed object");
+                }
+
+                #[cfg(debug_assertions)]
+                if self.state == #trait_location::TypeState::Ref as u8 {
+                    panic!("Cannot own an objects created from a reference");
+                }
+
+                let result = unsafe { *Box::from_raw(self.inner as *mut T) };
+                #[cfg(debug_assertions)]
+                { self.state = #trait_location::TypeState::Freed as u8; }
+                result
+            }
+        }
+
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn #free_fn_name(o: *const #ffi_name) {
+            let mut o = unsafe { &mut *(o as *mut #ffi_name) };
+            #[cfg(debug_assertions)]
+            if o.state == #trait_location::TypeState::Freed as u8 {
+                panic!("Cannot free freed object");
+            }
+
+            #[cfg(debug_assertions)]
+            if o.state == #trait_location::TypeState::Ref as u8 {
+                panic!("Cannot free objects created from a reference");
+            }
+
+            unsafe { drop(Box::from_raw(o.inner as *mut #ty_name)); }
+            #[cfg(debug_assertions)]
+            { o.state = #trait_location::TypeState::Freed as u8; }
+        }
+    }
+}
+
+#[cfg(feature = "generics")]
+fn expand_generic_type(
     ty_name: &Ident,
     generics: &Generics,
     generation_type: GenerationType,
@@ -79,9 +181,6 @@ fn expand_type(
         GenerationType::External => quote! { ezffi },
     };
 
-    // Per-monomorphization drop fn so generic types deallocate with the right
-    // Layout. The macro can't know the concrete T at expansion time, so the
-    // FFI struct carries a function pointer captured by `owned_into_ffi`.
     let (impl_ffi_header, drop_fn_def, drop_fn_ref) = if generics.gt_token.is_some() {
         (
             quote! { impl<T> #trait_location::IntoFfi<T> for #ty_name<T> },
@@ -194,4 +293,13 @@ fn expand_type(
             { o.state = #trait_location::TypeState::Freed as u8; }
         }
     }
+}
+
+#[cfg(not(feature = "generics"))]
+fn expand_generic_type(
+    _ty_name: &Ident,
+    _generics: &Generics,
+    _generation_type: GenerationType,
+) -> proc_macro2::TokenStream {
+    panic!("generic types require enabling the `generics` feature on ezffi",);
 }

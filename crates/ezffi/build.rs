@@ -150,6 +150,16 @@ fn build_header(
         .with_config(base_config.clone())
         .with_parse_expand_profile(profile);
 
+    // Forward this build's enabled features to cargo expand so cbindgen sees
+    // the same items the compiled lib does (e.g. `generics` gates `Vec<T>`).
+    let mut features: Vec<String> = Vec::new();
+    if env::var_os("CARGO_FEATURE_GENERICS").is_some() {
+        features.push("generics".into());
+    }
+    if !features.is_empty() {
+        builder = builder.with_parse_expand_features(&features);
+    }
+
     for item in exclude_items {
         builder = builder.exclude_item(*item);
     }
