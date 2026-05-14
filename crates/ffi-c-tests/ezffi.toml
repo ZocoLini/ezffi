@@ -6,8 +6,8 @@ case_style = "PascalCase"
 
 [fns]
 prefix = "ffi_"
-sufix = ""
+suffix = ""
 
 [free_fns]
 prefix = "ffi_"
-sufix = ""
+suffix = ""

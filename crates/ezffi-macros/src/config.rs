@@ -99,7 +99,7 @@ impl CaseStyle {
 #[derive(Deserialize)]
 struct NamingSection {
     prefix: Option<String>,
-    sufix: Option<String>,
+    suffix: Option<String>,
     case_style: Option<CaseStyle>,
 }
 
@@ -116,7 +116,7 @@ pub struct Config {
     #[serde(default = "default_prefix")]
     prefix: String,
     #[serde(default = "String::new")]
-    sufix: String,
+    suffix: String,
     #[serde(default = "default_case_style")]
     case_style: CaseStyle,
 
@@ -129,7 +129,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             prefix: default_prefix(),
-            sufix: String::new(),
+            suffix: String::new(),
             case_style: default_case_style(),
             types: None,
             fns: None,
@@ -146,11 +146,11 @@ impl Config {
             .unwrap_or(&self.prefix)
     }
 
-    pub fn type_sufix(&self) -> &str {
+    pub fn type_suffix(&self) -> &str {
         self.types
             .as_ref()
-            .and_then(|s| s.sufix.as_deref())
-            .unwrap_or(&self.sufix)
+            .and_then(|s| s.suffix.as_deref())
+            .unwrap_or(&self.suffix)
     }
 
     pub fn type_case_style(&self) -> CaseStyle {
@@ -167,11 +167,11 @@ impl Config {
             .unwrap_or(&self.prefix)
     }
 
-    pub fn fns_sufix(&self) -> &str {
+    pub fn fns_suffix(&self) -> &str {
         self.fns
             .as_ref()
-            .and_then(|s| s.sufix.as_deref())
-            .unwrap_or(&self.sufix)
+            .and_then(|s| s.suffix.as_deref())
+            .unwrap_or(&self.suffix)
     }
 
     pub fn fns_case_style(&self) -> CaseStyle {
@@ -188,11 +188,11 @@ impl Config {
             .unwrap_or(&self.prefix)
     }
 
-    pub fn free_fns_sufix(&self) -> &str {
+    pub fn free_fns_suffix(&self) -> &str {
         self.free_fns
             .as_ref()
-            .and_then(|s| s.sufix.as_deref())
-            .unwrap_or(&self.sufix)
+            .and_then(|s| s.suffix.as_deref())
+            .unwrap_or(&self.suffix)
     }
 
     pub fn free_fns_case_style(&self) -> CaseStyle {
