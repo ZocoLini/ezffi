@@ -16,3 +16,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 
 [features]
 generics = []
+async = []

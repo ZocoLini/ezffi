@@ -8,11 +8,13 @@ crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 ezffi-macros = { path = "../ezffi-macros", optional = true }
+pollster = { version = "0.4", optional = true }
 
 [features]
 default = ["macros"]
 macros = ["dep:ezffi-macros"]
 generics = ["ezffi-macros/generics"]
+async = ["dep:pollster", "ezffi-macros/async"]
 
 [build-dependencies]
 cbindgen = { version = "0.29.2" }

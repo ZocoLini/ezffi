@@ -27,6 +27,7 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
     let fn_name = &sig.ident;
     let inputs = sig.inputs.iter().collect::<Vec<_>>();
     let output = &sig.output;
+    let is_async = sig.asyncness.is_some();
 
     let mut ffi_params = Vec::new();
     let mut conversions = Vec::new();
@@ -126,6 +127,8 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
         quote! { #fn_name( #( #call_args ),* ) }
     };
 
+    let call = call_wrapper(is_async, call);
+
     // Function return type
     let ffi_ret = match output {
         ReturnType::Default => quote! { () },
@@ -166,4 +169,21 @@ fn generate_fn_wrapper(impl_ty: Option<&Type>, sig: &Signature) -> proc_macro2::
             #ret_conversion
         }
     }
+}
+
+#[cfg(feature = "async")]
+fn call_wrapper(is_async: bool, call: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    if is_async {
+        quote! { ::ezffi::block_on(#call) }
+    } else {
+        call
+    }
+}
+
+#[cfg(not(feature = "async"))]
+fn call_wrapper(is_async: bool, call: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    if is_async {
+        panic!("async functions require enabling the `async` feature on ezffi");
+    }
+    call
 }

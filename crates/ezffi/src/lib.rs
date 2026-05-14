@@ -3,8 +3,12 @@
 
 pub use ezffi_macros::export;
 
+#[cfg(feature = "async")]
+mod async_rt;
 mod std_impls;
 
+#[cfg(feature = "async")]
+pub use async_rt::*;
 pub use std_impls::*;
 
 pub trait IntoFfi<T> {

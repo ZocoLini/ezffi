@@ -1,3 +1,4 @@
+mod async_fns;
 mod enums;
 mod funcions;
 mod generics;
