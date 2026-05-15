@@ -23,5 +23,14 @@ int main() {
   ffi__ffi_generic_check(&f);
   ffi__ffi_generic_free(&f);
 
+  FfiPair p = ffi__ffi_pair_new(3, 40);
+  assert(ffi__ffi_pair_sum(&p) == 43);
+
+  FfiPair swapped = ffi__ffi_pair_swapped(&p);
+  assert(ffi__ffi_pair_sum(&swapped) == 43);
+
+  ffi__ffi_pair_free(&p);
+  ffi__ffi_pair_free(&swapped);
+
   return 0;
 }

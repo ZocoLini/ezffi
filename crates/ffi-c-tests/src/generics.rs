@@ -33,6 +33,30 @@ pub fn add2(a: &Generic<u64>, b: &Generic<u64>) -> Generic<u64> {
     }
 }
 
+#[ezffi::export]
+pub struct Pair<A, B> {
+    pub first: A,
+    pub second: B,
+}
+
+#[ezffi::export]
+impl Pair<u32, u64> {
+    pub fn new(first: u32, second: u64) -> Self {
+        Self { first, second }
+    }
+
+    pub fn sum(&self) -> u64 {
+        self.first as u64 + self.second
+    }
+
+    pub fn swapped(&self) -> Pair<u32, u64> {
+        Pair {
+            first: self.second as u32,
+            second: self.first as u64,
+        }
+    }
+}
+
 pub struct GenericInner {
     vec: Vec<String>,
     msg: String,

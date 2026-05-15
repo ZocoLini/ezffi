@@ -3,7 +3,7 @@
 ## v0.1.x
 - [x] Support for Structs with no C-compatible fields (Using *mut c_void)
 - [x] Support for Struct with C-compatible fields with 0-cost solution
-- [ ] Support for Structs with N generics
+- [x] Support for Structs with N generics
 - [x] Support for Enums with no C-compatible fields
 - [x] Support for Enums with C-compatible fields with 0-cost solution
 - [x] Support for Impl blocks

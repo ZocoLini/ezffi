@@ -243,27 +243,12 @@ fn expand_generic_type(
         GenerationType::External => quote! { ezffi },
     };
 
-    let (impl_ffi_header, drop_fn_def, drop_fn_ref) = if generics.gt_token.is_some() {
-        (
-            quote! { impl<T> #trait_location::IntoFfi<T> for #ty_name<T> },
-            quote! {
-                unsafe extern "C" fn __ezffi_drop<T>(p: *mut core::ffi::c_void) {
-                    drop(unsafe { Box::from_raw(p as *mut #ty_name<T>) });
-                }
-            },
-            quote! { __ezffi_drop::<T> },
-        )
-    } else {
-        (
-            quote! { impl #trait_location::IntoFfi<()> for #ty_name },
-            quote! {
-                unsafe extern "C" fn __ezffi_drop(p: *mut core::ffi::c_void) {
-                    drop(unsafe { Box::from_raw(p as *mut #ty_name) });
-                }
-            },
-            quote! { __ezffi_drop },
-        )
-    };
+    if generics.lifetimes().next().is_some() {
+        panic!("lifetime parameters are not supported by #[ezffi::export]");
+    }
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let turbofish = ty_generics.as_turbofish();
 
     quote! {
         #[derive(Clone, Copy)]
@@ -276,15 +261,23 @@ fn expand_generic_type(
         }
 
         const _: () = {
-            #drop_fn_def
+            // Per-monomorphization drop, captured as a fn pointer at
+            // construction time so the free fn deallocates with the right Layout.
+            unsafe extern "C" fn __ezffi_drop #impl_generics (
+                p: *mut core::ffi::c_void,
+            ) #where_clause {
+                let _ = unsafe { Box::from_raw(p as *mut #ty_name #ty_generics) };
+            }
 
-            #impl_ffi_header {
+            impl #impl_generics #trait_location::IntoFfi<()>
+                for #ty_name #ty_generics #where_clause
+            {
                 type Ffi = #ffi_name;
 
                 unsafe fn ref_into_ffi(&self) -> Self::Ffi {
                     #ffi_name {
                         inner: self as *const Self as *mut core::ffi::c_void,
-                        drop_fn: #drop_fn_ref,
+                        drop_fn: __ezffi_drop #turbofish,
                         #[cfg(debug_assertions)]
                         state: #trait_location::TypeState::Ref as u8,
                     }
@@ -292,7 +285,7 @@ fn expand_generic_type(
                 unsafe fn owned_into_ffi(self) -> Self::Ffi {
                     #ffi_name {
                         inner: Box::into_raw(Box::new(self)) as *mut core::ffi::c_void,
-                        drop_fn: #drop_fn_ref,
+                        drop_fn: __ezffi_drop #turbofish,
                         #[cfg(debug_assertions)]
                         state: #trait_location::TypeState::Owned as u8,
                     }
