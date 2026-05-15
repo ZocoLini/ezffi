@@ -44,7 +44,7 @@ cp -r "${TARGET_DIR}/include/." include/
 mv include/ffi-c-tests/ffi-c-tests.h include/ffi-c-tests/test.h
 
 for file in c-tests/*.c; do
-  if "$CC" $SAN_FLAGS "$file" -Iinclude -L"$TARGET_DIR" -lffi_c_tests -lezffi -o test.bin && "${LEAK_CHECK[@]}" ./test.bin; then
+  if "$CC" $SAN_FLAGS "$file" -Iinclude -L"$TARGET_DIR" -lffi_c_tests -o test.bin && "${LEAK_CHECK[@]}" ./test.bin; then
     echo -e "${GREEN}Passed: $file${NC}"
   else
     echo -e "${RED}Failed: $file${NC}"
