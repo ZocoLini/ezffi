@@ -1,18 +1,23 @@
 [package]
 name = "ezffi"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
 
-[lib]
-crate-type = ["staticlib", "rlib"]
+description = "Generate C-FFI bindings from Rust types/functions via a single proc-macro attribute"
+keywords = ["ffi", "c", "bindings", "interop", "cbindgen"]
+categories = ["development-tools::ffi", "external-ffi-bindings"]
+documentation = "https://docs.rs/ezffi"
 
 [dependencies]
-ezffi-macros = { path = "../ezffi-macros", optional = true }
+ezffi-macros = { path = "../ezffi-macros" }
 pollster = { version = "0.4", optional = true }
 
 [features]
-default = ["macros"]
-macros = ["dep:ezffi-macros"]
+default = []
 generics = ["ezffi-macros/generics"]
 async = ["dep:pollster", "ezffi-macros/async"]
 

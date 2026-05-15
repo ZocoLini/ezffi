@@ -2,4 +2,12 @@
 resolver = "2"
 members = ["crates/ezffi", "crates/ezffi-macros", "crates/ffi-c-tests"]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Borja Castellano <borjacastellano1@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ZocoLini/ezffi"
+readme = "README.md"
+
 [workspace.dependencies]

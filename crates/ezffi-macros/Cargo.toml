@@ -1,7 +1,16 @@
 [package]
 name = "ezffi-macros"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+description = "Proc-macros backing the ezffi crate"
+keywords = ["ffi", "macro", "proc-macro", "cbindgen", "interop"]
+categories = ["development-tools::procedural-macro-helpers"]
+documentation = "https://docs.rs/ezffi-macros"
 
 [lib]
 proc-macro = true
