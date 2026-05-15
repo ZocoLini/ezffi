@@ -4,11 +4,13 @@ use quote::quote;
 use syn::{Item, parse_macro_input};
 
 use crate::{
+    enums::{expand_c_enum, expand_enum, is_c_compatible_enum},
     functions::{expand_fn, expand_impl},
-    structs::{expand_c_enum, expand_c_struct, expand_enum, expand_struct, is_c_compatible_struct},
+    structs::{expand_c_struct, expand_struct, is_c_compatible_struct},
 };
 
 mod config;
+mod enums;
 mod functions;
 mod namer;
 mod structs;
@@ -31,13 +33,7 @@ pub fn export(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let output: proc_macro2::TokenStream =
-        export_impl(attr, item, GenerationType::External, false).into();
-
-    quote! {
-        #output
-    }
-    .into()
+    export_impl(attr, item, GenerationType::External, false)
 }
 
 #[proc_macro]
@@ -65,8 +61,6 @@ fn export_impl(
     let output: proc_macro2::TokenStream = match &item {
         Item::Struct(item) => {
             if item.generics.gt_token.is_none() && is_c_compatible_struct(item) {
-                // Zero-cost path replaces the user's struct with the prefixed
-                // `#[repr(C)]` copy + alias, so the original must be dropped.
                 skip_input = true;
                 expand_c_struct(item, generation_type)
             } else {
@@ -74,11 +68,7 @@ fn export_impl(
             }
         }
         Item::Enum(item) => {
-            if item
-                .variants
-                .iter()
-                .all(|v| matches!(v.fields, syn::Fields::Unit))
-            {
+            if is_c_compatible_enum(item) {
                 skip_input = true;
                 expand_c_enum(item, generation_type)
             } else {
