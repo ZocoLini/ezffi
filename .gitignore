@@ -2,8 +2,5 @@
 Cargo.lock
 target/
 
-# leaks
-/crates/ffi-c-tests/test.bin.dSYM
-
 # IDEs
 /.idea

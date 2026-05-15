@@ -37,6 +37,10 @@ impl FFITypeResolver {
         }
     }
 
+    pub fn is_c_compatible(ty: &syn::Type) -> bool {
+        FFITypeResolver::is_primitive(ty)
+    }
+
     pub fn ffi_ty_for(ty: &syn::Type, self_repl: Option<&Type>) -> proc_macro2::TokenStream {
         if Self::is_primitive(ty) {
             return quote! { #ty };

@@ -5,7 +5,7 @@ use syn::{Item, parse_macro_input};
 
 use crate::{
     functions::{expand_fn, expand_impl},
-    structs::{expand_c_enum, expand_enum, expand_struct},
+    structs::{expand_c_enum, expand_c_struct, expand_enum, expand_struct, is_c_compatible_struct},
 };
 
 mod config;
@@ -63,7 +63,16 @@ fn export_impl(
     let item = parse_macro_input!(item as Item);
 
     let output: proc_macro2::TokenStream = match &item {
-        Item::Struct(item) => expand_struct(item, generation_type),
+        Item::Struct(item) => {
+            if item.generics.gt_token.is_none() && is_c_compatible_struct(item) {
+                // Zero-cost path replaces the user's struct with the prefixed
+                // `#[repr(C)]` copy + alias, so the original must be dropped.
+                skip_input = true;
+                expand_c_struct(item, generation_type)
+            } else {
+                expand_struct(item, generation_type)
+            }
+        }
         Item::Enum(item) => {
             if item
                 .variants

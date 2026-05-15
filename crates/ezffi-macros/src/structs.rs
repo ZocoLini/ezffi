@@ -21,10 +21,72 @@ pub fn expand_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_mac
     expand_type(&item.ident, generation_type)
 }
 
+pub fn is_c_compatible_struct(item: &ItemStruct) -> bool {
+    for field in &item.fields {
+        if !super::FFITypeResolver::is_c_compatible(&field.ty) {
+            return false;
+        }
+    }
+
+    !item.fields.is_empty() // No-fields structs are not c-compatible (for now)
+}
+
+pub fn expand_c_struct(
+    item: &ItemStruct,
+    generation_type: GenerationType,
+) -> proc_macro2::TokenStream {
+    let user_name = &item.ident;
+    let ffi_name = FFINamer::name_struct(user_name);
+    let fields = &item.fields;
+    let attrs = &item.attrs;
+
+    super::FFITypeResolver::insert(&user_name.to_string(), &ffi_name.to_string());
+
+    let trait_location = match generation_type {
+        GenerationType::Internal => quote! { crate },
+        GenerationType::External => quote! { ezffi },
+    };
+
+    let has_repr = attrs.iter().any(|a| a.path().is_ident("repr"));
+    let repr = if has_repr {
+        quote! {}
+    } else {
+        quote! { #[repr(C)] }
+    };
+
+    // Named fields render as `{ ... }` (no semicolon); tuple fields as
+    // `( ... )` and need a trailing `;`.
+    let semi = match fields {
+        syn::Fields::Named(_) => quote! {},
+        _ => quote! { ; },
+    };
+
+    quote! {
+        #[derive(Clone, Copy)]
+        #repr
+        #(#attrs)*
+        pub struct #ffi_name #fields #semi
+
+        pub type #user_name = #ffi_name;
+
+        impl #trait_location::IntoFfi<()> for #ffi_name {
+            type Ffi = #ffi_name;
+
+            unsafe fn ref_into_ffi(&self) -> Self::Ffi { *self }
+            unsafe fn owned_into_ffi(self) -> Self::Ffi { self }
+        }
+
+        impl #trait_location::IntoRust<#ffi_name> for #ffi_name {
+            unsafe fn into_rust(&self) -> &#ffi_name { self }
+            unsafe fn into_rust_mut(&mut self) -> &mut #ffi_name { self }
+            unsafe fn into_rust_owned(self) -> #ffi_name { self }
+        }
+    }
+}
+
 pub fn expand_c_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_macro2::TokenStream {
     let user_name = &item.ident;
     let ffi_name = FFINamer::name_struct(user_name);
-    let vis = &item.vis;
     let variants = &item.variants;
     let attrs = &item.attrs;
 
@@ -46,11 +108,11 @@ pub fn expand_c_enum(item: &ItemEnum, generation_type: GenerationType) -> proc_m
         #[derive(Clone, Copy)]
         #repr
         #(#attrs)*
-        #vis enum #ffi_name {
+        pub enum #ffi_name {
             #variants
         }
 
-        #vis type #user_name = #ffi_name;
+        pub type #user_name = #ffi_name;
 
         impl #trait_location::IntoFfi<()> for #ffi_name {
             type Ffi = #ffi_name;

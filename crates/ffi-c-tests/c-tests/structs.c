@@ -2,9 +2,11 @@
 #include <assert.h>
 
 int main() {
-  // Car struct lifecycle, tests different params and return combinations
+  // Car has only C-compatible fields: zero-cost value type, no free fn.
+  // Direct field access works since the layout is fully exposed.
   FfiCar carA = ffi__ffi_car_new();
   assert(ffi__ffi_car_km(&carA) == 0);
+  assert(carA.km == 0);
   ffi__ffi_car_drive(&carA, 100);
   assert(ffi__ffi_car_km(&carA) == 100);
 
@@ -12,7 +14,6 @@ int main() {
   ffi__ffi_car_drive(&carB, 50);
   assert(ffi__ffi_car_km(&carB) == 50);
 
-  // merge_cars consumes carB, so it must not be freed afterwards.
   ffi__ffi_car_merge_cars(&carA, &carB);
   assert(ffi__ffi_car_km(&carA) == 150);
 
@@ -23,9 +24,6 @@ int main() {
 
   ffi__ffi_car_receive_ref(&carA, &carC);
   assert(ffi__ffi_car_km(&carA) == 550);
-
-  ffi__ffi_car_free(&carA);
-  ffi__ffi_car_free(&carC);
 
   // Special struct with a reference counter to ensure memory is freed
   FfiDeallocationStruct obj = ffi__ffi_deallocation_struct_new();
